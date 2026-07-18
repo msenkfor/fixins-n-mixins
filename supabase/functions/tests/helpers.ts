@@ -1,14 +1,15 @@
 /**
  * Shared test helpers — mock factories for Anthropic client and request builders.
  */
+import type { HandlerDeps } from "../_shared/types.ts";
 
-/** Build a mock Anthropic client that returns a text content block. */
-export function mockClientWithTextResponse(text: string) {
+/** Build a mock deps that returns a text content block. */
+export function mockClientWithTextResponse(text: string): HandlerDeps {
   return {
     getApiKey: () => "test-api-key",
-    createClient: (_apiKey: string) => ({
+    createClient: () => ({
       messages: {
-        create: async (_params: unknown) => ({
+        create: async () => ({
           content: [{ type: "text" as const, text }],
         }),
       },
@@ -16,13 +17,13 @@ export function mockClientWithTextResponse(text: string) {
   };
 }
 
-/** Build a mock Anthropic client that returns a tool_use content block. */
-export function mockClientWithToolResponse(input: unknown) {
+/** Build a mock deps that returns a tool_use content block. */
+export function mockClientWithToolResponse(input: unknown): HandlerDeps {
   return {
     getApiKey: () => "test-api-key",
-    createClient: (_apiKey: string) => ({
+    createClient: () => ({
       messages: {
-        create: async (_params: unknown) => ({
+        create: async () => ({
           content: [
             {
               type: "tool_use" as const,
@@ -37,23 +38,23 @@ export function mockClientWithToolResponse(input: unknown) {
   };
 }
 
-/** Build a mock deps object with no API key configured. */
-export function mockClientNoApiKey() {
+/** Build a mock deps with no API key configured. */
+export function mockClientNoApiKey(): HandlerDeps {
   return {
     getApiKey: () => undefined,
-    createClient: (_apiKey: string) => {
+    createClient: () => {
       throw new Error("Should not be called");
     },
   };
 }
 
-/** Build a mock deps object where the Anthropic call throws. */
-export function mockClientThatThrows(error: Error) {
+/** Build a mock deps where the Anthropic call throws. */
+export function mockClientThatThrows(error: Error): HandlerDeps {
   return {
     getApiKey: () => "test-api-key",
-    createClient: (_apiKey: string) => ({
+    createClient: () => ({
       messages: {
-        create: async (_params: unknown) => {
+        create: async () => {
           throw error;
         },
       },

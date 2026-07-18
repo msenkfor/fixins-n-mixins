@@ -5,6 +5,6 @@ import { handleRequest } from "./handler.ts";
 Deno.serve((req) =>
   handleRequest(req, {
     getApiKey: () => Deno.env.get("ANTHROPIC_API_KEY"),
-    createClient: (apiKey) => new Anthropic({ apiKey }) as ReturnType<typeof Object>,
+    createClient: (apiKey) => new Anthropic({ apiKey }),
   }),
 );
