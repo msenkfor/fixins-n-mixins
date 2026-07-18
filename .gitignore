@@ -11,6 +11,6 @@ web-build/
 .env
 .env.local
 skills-lock.json
-.agents
-.claude
-.gsd
+.agents/
+.claude/
+.gsd/
