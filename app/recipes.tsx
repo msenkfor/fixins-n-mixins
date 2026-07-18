@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { View, Text, Pressable, FlatList } from "react-native";
 import { useRouter } from "expo-router";
+import LottieView from "lottie-react-native";
 import { useRecipeSession } from "@/src/context/RecipeSessionContext";
 import { refreshRecipes } from "@/src/services/recipeApi";
 import { RecipeListSkeleton } from "@/src/components/SkeletonCard";
@@ -360,9 +361,32 @@ export default function RecipeListScreen() {
         />
       )}
 
-      {/* Loading skeleton or recipe list */}
+      {/* Loading animation + skeleton or recipe list */}
       {isLoading ? (
-        <RecipeListSkeleton />
+        <View style={{ flex: 1 }}>
+          <View
+            style={{
+              alignItems: "center",
+              paddingTop: spacing.xxl,
+              paddingBottom: spacing.md,
+              gap: spacing.sm,
+            }}
+          >
+            <LottieView
+              source={require("@/assets/animations/cooking-loader.json")}
+              autoPlay
+              loop
+              style={{ width: 120, height: 120 }}
+            />
+            <Text style={{ ...typography.h3, color: colors.text }}>
+              Cooking up recipes…
+            </Text>
+            <Text style={typography.bodySmall}>
+              Finding the best matches for your ingredients
+            </Text>
+          </View>
+          <RecipeListSkeleton />
+        </View>
       ) : (
         <FlatList
           data={recipes}
