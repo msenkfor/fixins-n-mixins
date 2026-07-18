@@ -1,15 +1,17 @@
 # Codebase Map
 
-Generated: 2026-07-18T14:48:49Z | Files: 15 | Described: 0/15
-<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T14:48:49Z","fingerprint":"022ac0ce5e9ae2f8ac5df18a2ed5ea81f1a673ca","fileCount":15,"truncated":false} -->
+Generated: 2026-07-18T15:01:27Z | Files: 17 | Described: 0/17
+<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T15:01:27Z","fingerprint":"afc2266368a0b04b239d086d996314170bb6d5fb","fileCount":17,"truncated":false} -->
 
 ### (root)/
 - `.gitignore`
 - `app.json`
+- `ARCHITECTURE.md`
 - `LICENSE`
 - `package-lock.json`
 - `package.json`
 - `README.md`
+- `skills-lock.json`
 - `tsconfig.json`
 
 ### app/
