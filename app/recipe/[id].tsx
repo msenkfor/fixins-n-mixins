@@ -1,84 +1,230 @@
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useRecipeSession } from "../../src/context/RecipeSessionContext";
+import { colors, spacing, radii, shadows, typography } from "../../src/theme";
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { recipes } = useRecipeSession();
 
   const recipe = recipes.find((r) => r.id === id);
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(
+    new Set()
+  );
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(
+    new Set()
+  );
 
   if (!recipe) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Recipe not found.</Text>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorEmoji}>🍽️</Text>
+        <Text style={styles.errorText}>Recipe not found</Text>
+        <Text style={styles.errorSubtext}>
+          This recipe may have been from a previous session
+        </Text>
       </View>
     );
   }
 
   const totalTime = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{recipe.title}</Text>
-      <Text style={styles.description}>{recipe.description}</Text>
+  const toggleIngredient = (index: number) => {
+    setCheckedIngredients((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
 
-      {/* Metadata row */}
-      <View style={styles.metaRow}>
-        <MetaItem label="Servings" value={String(recipe.servings)} />
-        <MetaItem label="Prep" value={`${recipe.prepTimeMinutes}m`} />
-        <MetaItem label="Cook" value={`${recipe.cookTimeMinutes}m`} />
-        <MetaItem label="Total" value={`${totalTime}m`} />
+  const toggleStep = (order: number) => {
+    setCompletedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(order)) {
+        next.delete(order);
+      } else {
+        next.add(order);
+      }
+      return next;
+    });
+  };
+
+  const fromPhotoCount = recipe.ingredients.filter((i) => i.fromPhoto).length;
+  const pantryCount = recipe.ingredients.length - fromPhotoCount;
+
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Hero header */}
+      <View style={styles.heroHeader}>
+        <View style={styles.heroDecoration} />
+        <Text style={styles.title}>{recipe.title}</Text>
+        <Text style={styles.description}>{recipe.description}</Text>
+
+        {/* Tags */}
+        {recipe.tags.length > 0 && (
+          <View style={styles.tagRow}>
+            {recipe.tags.map((tag) => (
+              <View key={tag} style={styles.tag}>
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
-      {/* Tags */}
-      {recipe.tags.length > 0 && (
-        <View style={styles.tagRow}>
-          {recipe.tags.map((tag) => (
-            <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {/* Time & servings card */}
+      <View style={styles.metaCard}>
+        <MetaItem emoji="👤" label="Servings" value={String(recipe.servings)} />
+        <View style={styles.metaDivider} />
+        <MetaItem emoji="🔪" label="Prep" value={`${recipe.prepTimeMinutes}m`} />
+        <View style={styles.metaDivider} />
+        <MetaItem emoji="🔥" label="Cook" value={`${recipe.cookTimeMinutes}m`} />
+        <View style={styles.metaDivider} />
+        <MetaItem emoji="⏱" label="Total" value={`${totalTime}m`} />
+      </View>
 
-      {/* Ingredients */}
-      <Text style={styles.sectionTitle}>Ingredients</Text>
-      {recipe.ingredients.map((ing, i) => (
-        <View key={i} style={styles.ingredientRow}>
-          <View style={styles.ingredientLeft}>
-            <Text style={styles.ingredientQty}>
-              {ing.quantity} {ing.unit}
-            </Text>
-            <Text style={styles.ingredientName}>{ing.name}</Text>
-          </View>
-          {!ing.fromPhoto && (
-            <View style={styles.pantryBadge}>
-              <Text style={styles.pantryText}>pantry</Text>
-            </View>
-          )}
+      {/* Ingredients section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Ingredients</Text>
+          <Text style={styles.sectionMeta}>
+            {fromPhotoCount} from photo{pantryCount > 0 ? ` · ${pantryCount} pantry` : ""}
+          </Text>
         </View>
-      ))}
 
-      {/* Steps */}
-      <Text style={styles.sectionTitle}>Instructions</Text>
-      {recipe.steps.map((step) => (
-        <View key={step.order} style={styles.stepRow}>
-          <View style={styles.stepNumber}>
-            <Text style={styles.stepNumberText}>{step.order}</Text>
-          </View>
-          <Text style={styles.stepText}>{step.instruction}</Text>
+        <View style={styles.ingredientsList}>
+          {recipe.ingredients.map((ing, i) => {
+            const isChecked = checkedIngredients.has(i);
+            return (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  styles.ingredientRow,
+                  isChecked && styles.ingredientChecked,
+                ]}
+                onPress={() => toggleIngredient(i)}
+                activeOpacity={0.7}
+              >
+                {/* Checkbox */}
+                <View
+                  style={[
+                    styles.checkbox,
+                    isChecked && styles.checkboxChecked,
+                  ]}
+                >
+                  {isChecked && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+
+                {/* Ingredient info */}
+                <View style={styles.ingredientInfo}>
+                  <Text
+                    style={[
+                      styles.ingredientQty,
+                      isChecked && styles.textStrikethrough,
+                    ]}
+                  >
+                    {ing.quantity} {ing.unit}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.ingredientName,
+                      isChecked && styles.textStrikethrough,
+                    ]}
+                  >
+                    {ing.name}
+                  </Text>
+                </View>
+
+                {/* Badge */}
+                {!ing.fromPhoto && (
+                  <View style={styles.pantryBadge}>
+                    <Text style={styles.pantryText}>pantry</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      ))}
+      </View>
 
+      {/* Steps section */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Instructions</Text>
+          <Text style={styles.sectionMeta}>
+            {recipe.steps.length} steps
+          </Text>
+        </View>
+
+        <View style={styles.stepsList}>
+          {recipe.steps.map((step) => {
+            const isDone = completedSteps.has(step.order);
+            return (
+              <TouchableOpacity
+                key={step.order}
+                style={styles.stepRow}
+                onPress={() => toggleStep(step.order)}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.stepNumber,
+                    isDone && styles.stepNumberDone,
+                  ]}
+                >
+                  {isDone ? (
+                    <Text style={styles.stepCheckmark}>✓</Text>
+                  ) : (
+                    <Text style={styles.stepNumberText}>{step.order}</Text>
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.stepText,
+                    isDone && styles.stepTextDone,
+                  ]}
+                >
+                  {step.instruction}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Bottom spacer for safe area */}
       <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 }
 
-function MetaItem({ label, value }: { label: string; value: string }) {
+function MetaItem({
+  emoji,
+  label,
+  value,
+}: {
+  emoji: string;
+  label: string;
+  value: string;
+}) {
   return (
     <View style={styles.metaItem}>
+      <Text style={styles.metaEmoji}>{emoji}</Text>
       <Text style={styles.metaValue}>{value}</Text>
       <Text style={styles.metaLabel}>{label}</Text>
     </View>
@@ -88,136 +234,250 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#16213e",
+    backgroundColor: colors.bg,
   },
   content: {
-    padding: 20,
+    paddingBottom: 20,
+  },
+
+  // Hero
+  heroHeader: {
+    paddingHorizontal: spacing.xxl,
+    paddingTop: 100, // space for transparent nav header
+    paddingBottom: spacing.xxl,
+    position: "relative",
+    overflow: "hidden",
+  },
+  heroDecoration: {
+    position: "absolute",
+    top: -60,
+    left: -40,
+    right: -40,
+    height: 200,
+    backgroundColor: colors.primaryMuted,
+    borderBottomLeftRadius: 120,
+    borderBottomRightRadius: 120,
   },
   title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 6,
+    ...typography.h1,
+    fontSize: 28,
+    marginBottom: spacing.sm,
   },
   description: {
-    fontSize: 15,
-    color: "#a0a0b8",
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  metaRow: {
-    flexDirection: "row",
-    backgroundColor: "#1a1a2e",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    justifyContent: "space-around",
-  },
-  metaItem: {
-    alignItems: "center",
-  },
-  metaValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#e94560",
-  },
-  metaLabel: {
-    fontSize: 11,
-    color: "#a0a0b8",
-    marginTop: 2,
+    ...typography.body,
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: spacing.lg,
   },
   tagRow: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 24,
+    gap: spacing.sm,
     flexWrap: "wrap",
   },
   tag: {
-    backgroundColor: "#53348340",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    backgroundColor: colors.tagBg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 1,
+    borderRadius: radii.full,
   },
   tagText: {
-    fontSize: 13,
-    color: "#c0a0e8",
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.tagText,
+  },
+
+  // Meta card
+  metaCard: {
+    flexDirection: "row",
+    backgroundColor: colors.bgCard,
+    marginHorizontal: spacing.xl,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    justifyContent: "space-around",
+    alignItems: "center",
+    ...shadows.card,
+    marginBottom: spacing.xxl,
+  },
+  metaItem: {
+    alignItems: "center",
+    gap: 2,
+  },
+  metaEmoji: {
+    fontSize: 18,
+    marginBottom: 2,
+  },
+  metaValue: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  metaLabel: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: colors.textMuted,
+  },
+  metaDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.borderLight,
+  },
+
+  // Sections
+  section: {
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.xxl,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 12,
-    marginTop: 8,
+    ...typography.h2,
+    fontSize: 19,
+  },
+  sectionMeta: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+
+  // Ingredients
+  ingredientsList: {
+    gap: 2,
   },
   ingredientRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1a1a2e",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.sm,
+    gap: spacing.md,
   },
-  ingredientLeft: {
+  ingredientChecked: {
+    backgroundColor: colors.bgOverlay,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  checkmark: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textOnPrimary,
+  },
+  ingredientInfo: {
     flexDirection: "row",
-    gap: 8,
+    gap: spacing.sm,
     flex: 1,
+    alignItems: "baseline",
   },
   ingredientQty: {
     fontSize: 14,
-    color: "#e94560",
     fontWeight: "600",
-    minWidth: 60,
+    color: colors.primary,
+    minWidth: 56,
   },
   ingredientName: {
-    fontSize: 14,
-    color: "#fff",
+    fontSize: 15,
+    color: colors.text,
     textTransform: "capitalize",
     flex: 1,
   },
+  textStrikethrough: {
+    textDecorationLine: "line-through",
+    opacity: 0.4,
+  },
   pantryBadge: {
-    backgroundColor: "#4ecca320",
-    paddingHorizontal: 8,
+    backgroundColor: colors.pantryBg,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   pantryText: {
-    fontSize: 11,
-    color: "#4ecca3",
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.pantryText,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  // Steps
+  stepsList: {
+    gap: spacing.lg,
   },
   stepRow: {
     flexDirection: "row",
-    gap: 14,
-    marginBottom: 16,
+    gap: spacing.lg,
     alignItems: "flex-start",
   },
   stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#e94560",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 2,
   },
+  stepNumberDone: {
+    backgroundColor: colors.accent,
+  },
   stepNumberText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "bold",
+    color: colors.textOnPrimary,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  stepCheckmark: {
+    color: colors.textOnPrimary,
+    fontSize: 15,
+    fontWeight: "700",
   },
   stepText: {
+    ...typography.body,
     fontSize: 15,
-    color: "#d0d0e0",
-    lineHeight: 22,
+    lineHeight: 24,
+    color: colors.text,
     flex: 1,
+    paddingTop: 4,
   },
+  stepTextDone: {
+    textDecorationLine: "line-through",
+    opacity: 0.4,
+  },
+
+  // Bottom
   bottomSpacer: {
-    height: 40,
+    height: 48,
+  },
+
+  // Error state
+  errorContainer: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.xxl,
+  },
+  errorEmoji: {
+    fontSize: 48,
+    marginBottom: spacing.lg,
   },
   errorText: {
-    color: "#e94560",
-    fontSize: 16,
+    ...typography.h2,
+    marginBottom: spacing.sm,
+  },
+  errorSubtext: {
+    ...typography.body,
     textAlign: "center",
-    marginTop: 40,
   },
 });

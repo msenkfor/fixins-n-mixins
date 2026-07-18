@@ -1,13 +1,37 @@
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
 import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import * as ImagePicker from "expo-image-picker";
 import { useRecipeSession } from "../src/context/RecipeSessionContext";
-import { MOCK_INGREDIENTS } from "../src/data/mockData";
+import { detectIngredients } from "../src/services/recipeApi";
+import { colors, spacing, radii, shadows, typography } from "../src/theme";
+import { useRef, useEffect } from "react";
 
 export default function CameraScreen() {
   const router = useRouter();
-  const { isLoading, setPhoto, setIngredients, setLoading, resetSession } = useRecipeSession();
+  const { isLoading, setPhoto, setIngredients, setLoading, resetSession } =
+    useRecipeSession();
+
+  // Pulsing animation for the loading state
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!isLoading) return;
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.08,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [isLoading, pulseAnim]);
 
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -25,7 +49,8 @@ export default function CameraScreen() {
   };
 
   const pickFromLibrary = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -44,41 +69,81 @@ export default function CameraScreen() {
     setPhoto(uri);
     setLoading(true);
 
-    // TODO: Replace with real ingredient detection via Claude vision API
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIngredients(MOCK_INGREDIENTS);
-    setLoading(false);
+    try {
+      const ingredients = await detectIngredients(uri);
+      setIngredients(ingredients);
+    } finally {
+      setLoading(false);
+    }
 
     router.push("/ingredients");
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
-      <View style={styles.header}>
-        <Text style={styles.emoji}>🍳</Text>
-        <Text style={styles.title}>Fixins n Mixins</Text>
-        <Text style={styles.subtitle}>Snap your ingredients, get recipes</Text>
+      {/* Decorative top arc */}
+      <View style={styles.topDecoration} />
+
+      <View style={styles.content}>
+        {/* Hero section */}
+        <View style={styles.heroSection}>
+          <View style={styles.iconContainer}>
+            <Text style={styles.heroEmoji}>🍳</Text>
+          </View>
+          <Text style={styles.title}>Fixins n{"\n"}Mixins</Text>
+          <Text style={styles.subtitle}>
+            Snap your ingredients, discover delicious recipes
+          </Text>
+        </View>
+
+        {/* Action area */}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <Animated.View
+              style={[
+                styles.loadingIcon,
+                { transform: [{ scale: pulseAnim }] },
+              ]}
+            >
+              <Text style={styles.loadingEmoji}>🔍</Text>
+            </Animated.View>
+            <Text style={styles.loadingTitle}>Scanning your photo…</Text>
+            <Text style={styles.loadingSubtitle}>
+              Identifying ingredients with AI
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={takePhoto}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.buttonIcon}>📷</Text>
+              <View>
+                <Text style={styles.primaryButtonText}>Take a Photo</Text>
+                <Text style={styles.buttonHint}>
+                  Point at your fridge or pantry
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={pickFromLibrary}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.buttonIcon}>🖼️</Text>
+              <Text style={styles.secondaryButtonText}>
+                Choose from Library
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#e94560" />
-          <Text style={styles.loadingText}>Detecting ingredients…</Text>
-        </View>
-      ) : (
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={takePhoto}>
-            <Text style={styles.buttonIcon}>📷</Text>
-            <Text style={styles.buttonText}>Take Photo</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.secondaryButton} onPress={pickFromLibrary}>
-            <Text style={styles.buttonIcon}>🖼️</Text>
-            <Text style={styles.secondaryButtonText}>Choose from Library</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Bottom accent */}
+      <Text style={styles.footer}>What will you cook today?</Text>
     </View>
   );
 }
@@ -86,72 +151,121 @@ export default function CameraScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#16213e",
+    backgroundColor: colors.bg,
+  },
+  topDecoration: {
+    position: "absolute",
+    top: -120,
+    left: -40,
+    right: -40,
+    height: 320,
+    backgroundColor: colors.primaryMuted,
+    borderBottomLeftRadius: 200,
+    borderBottomRightRadius: 200,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing.xxl,
+    justifyContent: "center",
+  },
+  heroSection: {
+    alignItems: "center",
+    marginBottom: 56,
+  },
+  iconContainer: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.bgCard,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    marginBottom: spacing.xl,
+    ...shadows.card,
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 60,
-  },
-  emoji: {
-    fontSize: 64,
-    marginBottom: 16,
+  heroEmoji: {
+    fontSize: 44,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 8,
+    ...typography.hero,
+    fontSize: 40,
+    textAlign: "center",
+    marginBottom: spacing.sm,
+    lineHeight: 46,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#a0a0b8",
+    ...typography.body,
+    textAlign: "center",
+    maxWidth: 260,
   },
   buttonContainer: {
-    width: "100%",
-    gap: 16,
+    gap: spacing.md,
   },
   primaryButton: {
-    backgroundColor: "#e94560",
-    borderRadius: 16,
+    backgroundColor: colors.primary,
+    borderRadius: radii.lg,
     paddingVertical: 20,
+    paddingHorizontal: spacing.xxl,
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    gap: 10,
+    gap: spacing.lg,
+    ...shadows.card,
   },
   secondaryButton: {
-    backgroundColor: "transparent",
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#533483",
+    backgroundColor: colors.bgCard,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderColor: colors.border,
     paddingVertical: 18,
+    paddingHorizontal: spacing.xxl,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 10,
+    gap: spacing.md,
   },
   buttonIcon: {
-    fontSize: 22,
+    fontSize: 24,
   },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#fff",
+  primaryButtonText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.textOnPrimary,
+  },
+  buttonHint: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.7)",
+    marginTop: 2,
   },
   secondaryButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
-    color: "#a0a0b8",
+    color: colors.textSecondary,
   },
   loadingContainer: {
     alignItems: "center",
-    gap: 16,
+    gap: spacing.md,
   },
-  loadingText: {
-    fontSize: 16,
-    color: "#a0a0b8",
+  loadingIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primaryMuted,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.sm,
+  },
+  loadingEmoji: {
+    fontSize: 36,
+  },
+  loadingTitle: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  loadingSubtitle: {
+    ...typography.bodySmall,
+  },
+  footer: {
+    ...typography.caption,
+    textAlign: "center",
+    paddingBottom: 48,
   },
 });

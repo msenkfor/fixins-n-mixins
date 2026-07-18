@@ -1,13 +1,45 @@
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useRecipeSession } from "../src/context/RecipeSessionContext";
+import { refreshRecipes } from "../src/services/recipeApi";
+import { RecipeListSkeleton } from "../src/components/SkeletonCard";
+import { colors, spacing, radii, shadows, typography } from "../src/theme";
+import { Recipe } from "../src/types/recipe";
 
 export default function RecipeListScreen() {
   const router = useRouter();
-  const { recipes, isLoading, noMoreRecipes, resetSession } = useRecipeSession();
+  const {
+    recipes,
+    ingredients,
+    isLoading,
+    noMoreRecipes,
+    shownRecipeTitles,
+    setRecipes,
+    addShownTitles,
+    setLoading,
+    setNoMoreRecipes,
+    resetSession,
+  } = useRecipeSession();
 
-  const handleRefresh = () => {
-    // TODO: Wire to real recipe generation with dedup logic
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const newRecipes = await refreshRecipes(ingredients, shownRecipeTitles);
+      if (newRecipes.length === 0) {
+        setNoMoreRecipes(true);
+      } else {
+        setRecipes(newRecipes);
+        addShownTitles(newRecipes.map((r) => r.title));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRetake = () => {
@@ -15,52 +47,96 @@ export default function RecipeListScreen() {
     router.replace("/");
   };
 
+  const formatTime = (recipe: Recipe) => {
+    const total = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
+    return `${total} min`;
+  };
+
+  const matchPercentage = (recipe: Recipe) => {
+    return Math.round(
+      (recipe.matchedIngredientCount / recipe.totalIngredientCount) * 100
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={handleRetake}>
-          <Text style={styles.retakeText}>📷 New Photo</Text>
+      {/* Action bar */}
+      <View style={styles.actionBar}>
+        <TouchableOpacity
+          onPress={handleRetake}
+          style={styles.actionButton}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.actionIcon}>📷</Text>
+          <Text style={styles.actionTextMuted}>New Photo</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleRefresh} disabled={noMoreRecipes || isLoading}>
-          <Text style={[styles.refreshText, (noMoreRecipes || isLoading) && styles.disabledText]}>
-            🔄 More Recipes
-          </Text>
+
+        <TouchableOpacity
+          onPress={handleRefresh}
+          disabled={noMoreRecipes || isLoading}
+          style={[
+            styles.refreshButton,
+            (noMoreRecipes || isLoading) && styles.disabledButton,
+          ]}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.refreshIcon}>✨</Text>
+          <Text style={styles.refreshText}>More Recipes</Text>
         </TouchableOpacity>
       </View>
 
+      {/* No-more banner */}
       {noMoreRecipes && (
         <View style={styles.noMoreBanner}>
+          <Text style={styles.noMoreEmoji}>🍽️</Text>
           <Text style={styles.noMoreText}>
-            No more new recipes for these ingredients — try a new photo!
+            You've seen all our suggestions — try a new photo for fresh ideas!
           </Text>
         </View>
       )}
 
+      {/* Loading skeleton or recipe list */}
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#e94560" />
-          <Text style={styles.loadingText}>Finding recipes…</Text>
-        </View>
+        <RecipeListSkeleton />
       ) : (
         <FlatList
           data={recipes}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.card}
               onPress={() => router.push(`/recipe/${item.id}`)}
               activeOpacity={0.7}
             >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardTime}>{item.cookTimeMinutes + item.prepTimeMinutes} min</Text>
-              </View>
-              <Text style={styles.cardDescription}>{item.description}</Text>
-              <View style={styles.cardFooter}>
-                <Text style={styles.matchBadge}>
-                  Uses {item.matchedIngredientCount}/{item.totalIngredientCount} ingredients
+              {/* Card header */}
+              <View style={styles.cardTop}>
+                <Text style={styles.cardTitle} numberOfLines={2}>
+                  {item.title}
                 </Text>
+                <View style={styles.timeBadge}>
+                  <Text style={styles.timeIcon}>⏱</Text>
+                  <Text style={styles.timeText}>{formatTime(item)}</Text>
+                </View>
+              </View>
+
+              {/* Description */}
+              <Text style={styles.cardDescription} numberOfLines={2}>
+                {item.description}
+              </Text>
+
+              {/* Footer with match + tags */}
+              <View style={styles.cardFooter}>
+                <View style={styles.matchBadge}>
+                  <Text style={styles.matchText}>
+                    {matchPercentage(item)}% match
+                  </Text>
+                  <Text style={styles.matchDetail}>
+                    {item.matchedIngredientCount}/{item.totalIngredientCount}{" "}
+                    ingredients
+                  </Text>
+                </View>
                 <View style={styles.tagRow}>
                   {item.tags.slice(0, 2).map((tag) => (
                     <View key={tag} style={styles.tag}>
@@ -68,6 +144,11 @@ export default function RecipeListScreen() {
                     </View>
                   ))}
                 </View>
+              </View>
+
+              {/* Subtle chevron */}
+              <View style={styles.chevronWrap}>
+                <Text style={styles.chevron}>›</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -80,84 +161,113 @@ export default function RecipeListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#16213e",
+    backgroundColor: colors.bg,
   },
-  topBar: {
+  actionBar: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    alignItems: "center",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: "#1a1a2e",
+    borderBottomColor: colors.borderLight,
   },
-  retakeText: {
-    color: "#a0a0b8",
-    fontSize: 15,
-    fontWeight: "500",
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  actionIcon: {
+    fontSize: 16,
+  },
+  actionTextMuted: {
+    ...typography.bodySmall,
+    fontWeight: "600",
+    color: colors.textMuted,
+  },
+  refreshButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.primaryMuted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+  },
+  refreshIcon: {
+    fontSize: 14,
   },
   refreshText: {
-    color: "#e94560",
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.primary,
   },
-  disabledText: {
-    opacity: 0.4,
+  disabledButton: {
+    opacity: 0.35,
   },
   noMoreBanner: {
-    backgroundColor: "#533483",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.bgMuted,
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radii.md,
+    gap: spacing.md,
+  },
+  noMoreEmoji: {
+    fontSize: 24,
   },
   noMoreText: {
-    color: "#fff",
-    fontSize: 13,
-    textAlign: "center",
-  },
-  loadingContainer: {
+    ...typography.bodySmall,
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#a0a0b8",
+    color: colors.textSecondary,
   },
   list: {
-    padding: 16,
-    gap: 12,
+    padding: spacing.lg,
+    gap: spacing.md,
+    paddingBottom: 32,
   },
   card: {
-    backgroundColor: "#1a1a2e",
-    borderRadius: 14,
-    padding: 16,
+    backgroundColor: colors.bgCard,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    ...shadows.card,
+    position: "relative",
   },
-  cardHeader: {
+  cardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "baseline",
-    marginBottom: 6,
+    alignItems: "flex-start",
+    marginBottom: spacing.sm,
+    gap: spacing.md,
   },
   cardTitle: {
+    ...typography.h3,
     fontSize: 18,
-    fontWeight: "700",
-    color: "#fff",
     flex: 1,
-    marginRight: 8,
   },
-  cardTime: {
-    fontSize: 13,
-    color: "#e94560",
+  timeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: colors.bgMuted,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
+  },
+  timeIcon: {
+    fontSize: 11,
+  },
+  timeText: {
+    fontSize: 12,
     fontWeight: "600",
+    color: colors.primary,
   },
   cardDescription: {
-    fontSize: 14,
-    color: "#a0a0b8",
-    lineHeight: 20,
-    marginBottom: 12,
+    ...typography.body,
+    marginBottom: spacing.lg,
   },
   cardFooter: {
     flexDirection: "row",
@@ -165,22 +275,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   matchBadge: {
-    fontSize: 12,
-    color: "#4ecca3",
-    fontWeight: "600",
+    backgroundColor: colors.matchBg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radii.sm,
+  },
+  matchText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.matchText,
+  },
+  matchDetail: {
+    fontSize: 10,
+    color: colors.matchText,
+    opacity: 0.7,
+    marginTop: 1,
   },
   tagRow: {
     flexDirection: "row",
-    gap: 6,
+    gap: spacing.xs,
   },
   tag: {
-    backgroundColor: "#53348340",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    backgroundColor: colors.tagBg,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
   },
   tagText: {
     fontSize: 11,
-    color: "#c0a0e8",
+    fontWeight: "600",
+    color: colors.tagText,
+  },
+  chevronWrap: {
+    position: "absolute",
+    right: spacing.md,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+  },
+  chevron: {
+    fontSize: 24,
+    color: colors.border,
+    fontWeight: "300",
   },
 });

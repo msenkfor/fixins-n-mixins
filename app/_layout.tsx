@@ -1,21 +1,43 @@
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { RecipeSessionProvider } from "../src/context/RecipeSessionContext";
+import { colors } from "../src/theme";
 
 export default function RootLayout() {
   return (
     <RecipeSessionProvider>
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "#1a1a2e" },
-          headerTintColor: "#fff",
-          headerTitleStyle: { fontWeight: "600" },
-          contentStyle: { backgroundColor: "#16213e" },
+          headerStyle: { backgroundColor: colors.bg },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: "600", color: colors.text },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.bg },
+          animation: "slide_from_right",
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Fixins n Mixins", headerShown: false }} />
-        <Stack.Screen name="ingredients" options={{ title: "Your Ingredients", presentation: "modal" }} />
+        <Stack.Screen
+          name="index"
+          options={{ title: "Fixins n Mixins", headerShown: false }}
+        />
+        <Stack.Screen
+          name="ingredients"
+          options={{
+            title: "Your Ingredients",
+            presentation: "modal",
+            headerStyle: { backgroundColor: colors.bg },
+          }}
+        />
         <Stack.Screen name="recipes" options={{ title: "Recipes" }} />
-        <Stack.Screen name="recipe/[id]" options={{ title: "Recipe" }} />
+        <Stack.Screen
+          name="recipe/[id]"
+          options={{
+            title: "",
+            headerTransparent: true,
+            headerBackTitle: "Recipes",
+          }}
+        />
       </Stack>
     </RecipeSessionProvider>
   );
