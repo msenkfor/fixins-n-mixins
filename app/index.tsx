@@ -1,14 +1,14 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import LottieView from "lottie-react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRecipeSession } from "@/src/context/RecipeSessionContext";
 import { detectIngredients } from "@/src/services/recipeApi";
 import { colors, spacing, radii, shadows, typography } from "@/src/theme";
@@ -18,6 +18,7 @@ import { useRef } from "react";
 
 export default function CameraScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     isLoading,
     error,
@@ -84,119 +85,144 @@ export default function CameraScreen() {
   };
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ flexGrow: 1 }}
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.bg,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
     >
-      {/* Warm gradient background */}
-      <LinearGradient
-        colors={["rgba(232, 106, 51, 0.12)", "rgba(232, 106, 51, 0.03)", "transparent"]}
-        locations={[0, 0.5, 1]}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 400,
-        }}
-      />
-
+      {/* Top section — brand + animation (takes ~55% of screen) */}
       <View
         style={{
           flex: 1,
-          paddingHorizontal: spacing.xxl,
-          justifyContent: "center",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          paddingBottom: spacing.xl,
         }}
       >
-        {/* Hero section */}
-        <View style={{ alignItems: "center", marginBottom: 48 }}>
-          {/* Chef chopping scene */}
-          <Animated.View
-            entering={FadeIn.duration(600).delay(100)}
+        {/* Brand mark */}
+        <Animated.View
+          entering={FadeIn.duration(500).delay(100)}
+          style={{ alignItems: "center", marginBottom: spacing.lg }}
+        >
+          <Text
             style={{
-              width: 260,
-              height: 200,
-              marginBottom: spacing.md,
+              fontSize: 13,
+              fontWeight: "600",
+              letterSpacing: 3,
+              textTransform: "uppercase",
+              color: colors.primary,
+              marginBottom: 6,
             }}
           >
-            <LottieView
-              source={require("@/assets/animations/splash-hero.json")}
-              autoPlay
-              loop
-              style={{ width: 260, height: 200 }}
-            />
-          </Animated.View>
-
-          {/* App title — slides up */}
-          <Animated.Text
-            entering={FadeInUp.duration(500).delay(300).springify().damping(14)}
+            Fixins n Mixins
+          </Text>
+          <View
             style={{
-              ...typography.hero,
-              fontSize: 42,
-              textAlign: "center",
-              marginBottom: spacing.sm,
-              lineHeight: 48,
+              width: 24,
+              height: 2,
+              backgroundColor: colors.primary,
+              borderRadius: 1,
+              opacity: 0.4,
+            }}
+          />
+        </Animated.View>
+
+        {/* Chef animation — hero focal point */}
+        <Animated.View
+          entering={FadeInUp.duration(600).delay(200).springify().damping(18)}
+          style={{
+            width: 280,
+            height: 180,
+          }}
+        >
+          <LottieView
+            source={require("@/assets/animations/splash-hero.json")}
+            autoPlay
+            loop
+            style={{ width: 280, height: 180 }}
+          />
+        </Animated.View>
+      </View>
+
+      {/* Bottom section — content + CTAs (takes ~45%) */}
+      <View
+        style={{
+          paddingHorizontal: spacing.xxl,
+          paddingBottom: spacing.xxl,
+        }}
+      >
+        {/* Headline */}
+        <Animated.View
+          entering={FadeInUp.duration(400).delay(400).springify().damping(16)}
+          style={{ marginBottom: spacing.xxl }}
+        >
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: "800",
+              letterSpacing: -0.5,
+              color: colors.text,
+              lineHeight: 34,
             }}
           >
-            Fixins n{"\n"}Mixins
-          </Animated.Text>
-
-          {/* Subtitle — fades in after title */}
-          <Animated.Text
-            entering={FadeIn.duration(600).delay(700)}
+            What's in your kitchen?
+          </Text>
+          <Text
             style={{
               ...typography.body,
-              textAlign: "center",
-              maxWidth: 280,
               fontSize: 16,
-              lineHeight: 24,
+              marginTop: 8,
+              color: colors.textSecondary,
             }}
           >
-            Snap your ingredients,{"\n"}discover delicious recipes
-          </Animated.Text>
-        </View>
+            Snap a photo and we'll find recipes you can make right now.
+          </Text>
+        </Animated.View>
 
         {/* Error banner */}
         {error && !isLoading && (
-          <ErrorBanner message={error} onDismiss={() => setError(null)} />
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError(null)}
+          />
         )}
 
         {/* Action area */}
         {isLoading ? (
           <Animated.View
-            entering={FadeIn.duration(400)}
-            style={{ alignItems: "center", gap: spacing.md }}
+            entering={FadeIn.duration(300)}
+            style={{
+              alignItems: "center",
+              backgroundColor: colors.bgCard,
+              borderRadius: radii.xl,
+              borderCurve: "continuous",
+              padding: spacing.xxl,
+              boxShadow: shadows.soft,
+              gap: spacing.md,
+            }}
           >
-            <View
-              style={{
-                width: 110,
-                height: 110,
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: spacing.sm,
-              }}
-            >
-              <LottieView
-                ref={scanningRef}
-                source={require("@/assets/animations/scanning.json")}
-                autoPlay
-                loop
-                style={{ width: 110, height: 110 }}
-              />
-            </View>
+            <LottieView
+              ref={scanningRef}
+              source={require("@/assets/animations/scanning.json")}
+              autoPlay
+              loop
+              style={{ width: 80, height: 80 }}
+            />
             <Text style={{ ...typography.h3, color: colors.text }}>
               Scanning your photo…
             </Text>
-            <Text style={typography.bodySmall}>
+            <Text style={{ ...typography.bodySmall, textAlign: "center" }}>
               Identifying ingredients with AI
             </Text>
           </Animated.View>
         ) : (
           <View style={{ gap: spacing.md }}>
-            {/* Primary CTA — slides up */}
+            {/* Primary CTA */}
             <Animated.View
-              entering={FadeInDown.duration(400).delay(500).springify().damping(16)}
+              entering={FadeInDown.duration(350).delay(550).springify().damping(18)}
             >
               <Pressable
                 onPress={takePhoto}
@@ -204,99 +230,63 @@ export default function CameraScreen() {
                 accessibilityLabel="Take a photo of your ingredients"
                 style={({ pressed }) => ({
                   backgroundColor: colors.primary,
-                  borderRadius: radii.xl,
+                  borderRadius: radii.lg,
                   borderCurve: "continuous",
-                  paddingVertical: 22,
-                  paddingHorizontal: spacing.xxl,
+                  paddingVertical: 18,
                   flexDirection: "row",
+                  justifyContent: "center",
                   alignItems: "center",
-                  gap: spacing.lg,
+                  gap: spacing.sm,
                   boxShadow:
-                    "0px 4px 16px rgba(232, 106, 51, 0.35), 0px 1px 4px rgba(232, 106, 51, 0.2)",
-                  opacity: pressed ? 0.85 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                    "0px 4px 12px rgba(232, 106, 51, 0.3)",
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
                 })}
               >
-                <View
+                <SFIcon
+                  name="camera.fill"
+                  size={20}
+                  tintColor="#FFFFFF"
+                  weight="medium"
+                />
+                <Text
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    fontSize: 17,
+                    fontWeight: "700",
+                    color: colors.textOnPrimary,
                   }}
                 >
-                  <SFIcon
-                    name="camera.fill"
-                    size={22}
-                    tintColor="#FFFFFF"
-                    weight="medium"
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: "700",
-                      color: colors.textOnPrimary,
-                    }}
-                  >
-                    Take a Photo
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: "rgba(255, 255, 255, 0.75)",
-                      marginTop: 2,
-                    }}
-                  >
-                    Point at your fridge or pantry
-                  </Text>
-                </View>
-                <SFIcon
-                  name="arrow.right"
-                  size={18}
-                  tintColor="rgba(255, 255, 255, 0.6)"
-                  weight="semibold"
-                />
+                  Take a Photo
+                </Text>
               </Pressable>
             </Animated.View>
 
-            {/* Secondary CTA — slides up staggered */}
+            {/* Secondary CTA */}
             <Animated.View
-              entering={FadeInDown.duration(400).delay(650).springify().damping(16)}
+              entering={FadeInDown.duration(350).delay(650).springify().damping(18)}
             >
               <Pressable
                 onPress={pickFromLibrary}
                 accessibilityRole="button"
                 accessibilityLabel="Choose a photo from your library"
                 style={({ pressed }) => ({
-                  backgroundColor: colors.bgCard,
-                  borderRadius: radii.xl,
-                  borderCurve: "continuous",
-                  borderWidth: 1.5,
-                  borderColor: colors.border,
-                  paddingVertical: 18,
-                  paddingHorizontal: spacing.xxl,
+                  paddingVertical: 16,
                   flexDirection: "row",
                   justifyContent: "center",
                   alignItems: "center",
-                  gap: spacing.md,
-                  opacity: pressed ? 0.7 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                  gap: spacing.sm,
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
                 })}
               >
                 <SFIcon
                   name="photo.on.rectangle"
-                  size={22}
-                  tintColor={colors.textSecondary as string}
+                  size={18}
+                  tintColor={colors.textMuted as string}
                 />
                 <Text
                   style={{
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: "600",
-                    color: colors.textSecondary,
+                    color: colors.textMuted,
                   }}
                 >
                   Choose from Library
@@ -306,18 +296,6 @@ export default function CameraScreen() {
           </View>
         )}
       </View>
-
-      {/* Bottom tagline */}
-      <Animated.Text
-        entering={FadeIn.duration(500).delay(1000)}
-        style={{
-          ...typography.caption,
-          textAlign: "center",
-          paddingBottom: 48,
-        }}
-      >
-        What will you cook today?
-      </Animated.Text>
-    </ScrollView>
+    </View>
   );
 }
