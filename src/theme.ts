@@ -1,95 +1,58 @@
 /**
- * Warm, appetizing color palette inspired by cooking/lifestyle apps.
- * Uses Color API from expo-router for semantic platform colors where applicable,
- * with hex fallbacks for web and custom brand colors.
+ * Warm, appetizing color palette for Fixins n Mixins.
+ * Brand hex tokens only — do not import from expo-router here
+ * (that creates a circular dependency with app/_layout.tsx).
  */
-import { Platform } from "react-native";
-import { Color } from "expo-router";
+export const fonts = {
+  heading: {
+    regular: "Fredoka_400Regular",
+    medium: "Fredoka_500Medium",
+    semibold: "Fredoka_600SemiBold",
+    bold: "Fredoka_700Bold",
+  },
+  body: {
+    regular: "Nunito_400Regular",
+    medium: "Nunito_500Medium",
+    semibold: "Nunito_600SemiBold",
+    bold: "Nunito_700Bold",
+    extrabold: "Nunito_800ExtraBold",
+  },
+} as const;
 
 export const colors = {
-  // Backgrounds — use semantic platform backgrounds
-  bg: Platform.select({
-    ios: Color.ios.systemBackground,
-    android: Color.android.dynamic.surface,
-    default: "#FFFAF5",
-  })!,
-  bgCard: Platform.select({
-    ios: Color.ios.secondarySystemBackground,
-    android: Color.android.dynamic.surfaceContainer,
-    default: "#FFFFFF",
-  })!,
-  bgMuted: "#FFF5ED", // brand-specific peach tint, no platform equivalent
+  bg: "#FFFAF5",
+  bgCard: "#FFFFFF",
+  bgMuted: "#FFF5ED",
   bgOverlay: "rgba(0, 0, 0, 0.04)",
 
-  // Primary — warm terracotta/coral (brand color, not a system semantic)
-  primary: Platform.select({
-    ios: Color.ios.systemOrange,
-    android: Color.android.dynamic.primary,
-    default: "#E86A33",
-  })!,
+  primary: "#E86A33",
   primaryLight: "#FF8C5A",
   primaryMuted: "rgba(232, 106, 51, 0.1)",
 
-  // Accent — sage green
-  accent: Platform.select({
-    ios: Color.ios.systemGreen,
-    android: Color.android.dynamic.tertiary,
-    default: "#5B8C5A",
-  })!,
+  accent: "#5B8C5A",
   accentLight: "#7DB87D",
   accentMuted: "rgba(91, 140, 90, 0.12)",
 
-  // Text — use semantic label colors
-  text: Platform.select({
-    ios: Color.ios.label,
-    android: Color.android.dynamic.onSurface,
-    default: "#2D2016",
-  })!,
-  textSecondary: Platform.select({
-    ios: Color.ios.secondaryLabel,
-    android: Color.android.dynamic.onSurfaceVariant,
-    default: "#8A7968",
-  })!,
-  textMuted: Platform.select({
-    ios: Color.ios.tertiaryLabel,
-    android: Color.android.dynamic.outline,
-    default: "#B8A898",
-  })!,
+  text: "#2D2016",
+  textSecondary: "#8A7968",
+  textMuted: "#B8A898",
   textOnPrimary: "#FFFFFF",
 
-  // Borders & Dividers
-  border: Platform.select({
-    ios: Color.ios.separator,
-    android: Color.android.dynamic.outlineVariant,
-    default: "#F0E6DA",
-  })!,
-  borderLight: Platform.select({
-    ios: Color.ios.separator,
-    android: Color.android.dynamic.outlineVariant,
-    default: "#F7F0E8",
-  })!,
+  border: "#F0E6DA",
+  borderLight: "#F7F0E8",
 
-  // Tags — brand-specific
   tagBg: "#FFF0E6",
   tagText: "#C45A20",
 
-  // Match / success
   matchBg: "#EFF8EF",
   matchText: "#3D7A3D",
 
-  // Pantry badge
   pantryBg: "#FFF3E0",
   pantryText: "#B8860B",
 
-  // Danger / remove
-  danger: Platform.select({
-    ios: Color.ios.systemRed,
-    android: Color.android.dynamic.error,
-    default: "#D4534B",
-  })!,
+  danger: "#D4534B",
   dangerMuted: "rgba(212, 83, 75, 0.08)",
 
-  // Skeleton shimmer
   skeletonBase: "#F0E6DA",
   skeletonHighlight: "#FAF3EC",
 } as const;
@@ -112,50 +75,56 @@ export const radii = {
   full: 9999,
 } as const;
 
+/** Weight is baked into fontFamily — don't set fontWeight with these. */
 export const typography = {
   hero: {
+    fontFamily: fonts.heading.bold,
     fontSize: 34,
-    fontWeight: "800" as const,
     letterSpacing: -0.5,
     color: colors.text,
   },
   h1: {
+    fontFamily: fonts.heading.bold,
     fontSize: 26,
-    fontWeight: "700" as const,
     letterSpacing: -0.3,
     color: colors.text,
   },
   h2: {
+    fontFamily: fonts.heading.semibold,
     fontSize: 20,
-    fontWeight: "700" as const,
     color: colors.text,
   },
   h3: {
+    fontFamily: fonts.heading.semibold,
     fontSize: 17,
-    fontWeight: "600" as const,
     color: colors.text,
   },
   body: {
+    fontFamily: fonts.body.regular,
     fontSize: 15,
-    fontWeight: "400" as const,
     lineHeight: 22,
     color: colors.textSecondary,
   },
   bodySmall: {
+    fontFamily: fonts.body.regular,
     fontSize: 13,
-    fontWeight: "400" as const,
     lineHeight: 18,
     color: colors.textSecondary,
   },
   caption: {
+    fontFamily: fonts.body.medium,
     fontSize: 12,
-    fontWeight: "500" as const,
     color: colors.textMuted,
   },
   label: {
+    fontFamily: fonts.body.semibold,
     fontSize: 14,
-    fontWeight: "600" as const,
     color: colors.text,
+  },
+  button: {
+    fontFamily: fonts.body.bold,
+    fontSize: 17,
+    color: colors.textOnPrimary,
   },
 } as const;
 
@@ -164,4 +133,5 @@ export const shadows = {
   card: "0px 2px 8px rgba(45, 32, 22, 0.08)",
   cardHover: "0px 4px 16px rgba(45, 32, 22, 0.12)",
   soft: "0px 1px 4px rgba(45, 32, 22, 0.08)",
+  cta: "0px 3px 10px rgba(232, 106, 51, 0.28)",
 } as const;

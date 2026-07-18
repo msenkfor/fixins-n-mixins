@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from "react-native";
-import { SFIcon } from "@/src/components/SFIcon";
-import { colors, spacing, radii, typography } from "@/src/theme";
+import { SFIcon } from "@/src/components/sf-icon";
+import { colors, fonts, spacing, radii, typography } from "@/src/theme";
 
 interface ErrorBannerProps {
   message: string;
@@ -15,14 +15,14 @@ export function ErrorBanner({ message, onDismiss, onRetry }: ErrorBannerProps) {
       style={{
         flexDirection: "row",
         alignItems: "flex-start",
-        backgroundColor: "#FEF2F2",
+        backgroundColor: colors.dangerMuted,
         marginHorizontal: spacing.xl,
         marginTop: spacing.md,
         padding: spacing.lg,
         borderRadius: radii.md,
         borderCurve: "continuous",
         borderWidth: 1,
-        borderColor: "#FECACA",
+        borderColor: "rgba(212, 83, 75, 0.25)",
         gap: spacing.md,
       }}
     >
@@ -37,8 +37,8 @@ export function ErrorBanner({ message, onDismiss, onRetry }: ErrorBannerProps) {
         <Text
           style={{
             ...typography.bodySmall,
-            color: "#991B1B",
-            fontWeight: "500",
+            fontFamily: fonts.body.medium,
+            color: colors.danger,
           }}
         >
           {message}
@@ -54,8 +54,8 @@ export function ErrorBanner({ message, onDismiss, onRetry }: ErrorBannerProps) {
               >
                 <Text
                   style={{
+                    fontFamily: fonts.body.bold,
                     fontSize: 13,
-                    fontWeight: "700",
                     color: colors.danger as string,
                   }}
                 >
@@ -72,9 +72,9 @@ export function ErrorBanner({ message, onDismiss, onRetry }: ErrorBannerProps) {
               >
                 <Text
                   style={{
+                    fontFamily: fonts.body.semibold,
                     fontSize: 13,
-                    fontWeight: "600",
-                    color: "#6B7280",
+                    color: colors.textMuted,
                   }}
                 >
                   Dismiss

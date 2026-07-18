@@ -13,8 +13,6 @@ Snap a photo of your fridge or pantry — the app detects ingredients with Claud
 | AI | Anthropic Claude (`claude-sonnet-4-6`) — vision + tool use |
 | State | React Context (session-scoped, no persistence) |
 
-Deeper design rationale lives in [ARCHITECTURE.md](./ARCHITECTURE.md).
-
 ## Prerequisites
 
 - Node.js 20+
@@ -88,11 +86,17 @@ The API key never ships in the client — only the Edge Functions talk to Anthro
 ## Project layout
 
 ```
-app/                 Screens (expo-router)
-src/                 Theme, session context, API client, types
+app/                 Routes only (expo-router; dynamic segments like [id])
+src/screens/         Screen UI with friendly names (e.g. recipe-detail-screen)
+src/components/      Reusable UI (one component per file, kebab-case)
+src/context/         Session state
+src/services/        API client
+src/theme.ts         Colors, fonts, spacing
 supabase/functions/  detect-ingredients, generate-recipes, shared helpers
 design-system/       Visual design tokens / notes
 ```
+
+`app/` is navigation — keep route files thin. Put screen UI in `src/screens/` and shared pieces in `src/components/`.
 
 ## License
 

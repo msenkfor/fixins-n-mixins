@@ -1,5 +1,8 @@
 import { corsHeaders } from "./cors.ts";
 
+export { mapUpstreamError, statusFromError } from "./errors.ts";
+export type { MappedError } from "./errors.ts";
+
 const JSON_HEADERS = { ...corsHeaders, "Content-Type": "application/json" };
 
 /** Return a JSON success response with CORS headers. */
@@ -15,13 +18,4 @@ export function errorResponse(error: string, status: number): Response {
 /** Return an OPTIONS preflight response. */
 export function corsPreflightResponse(): Response {
   return new Response("ok", { headers: corsHeaders });
-}
-
-/**
- * Map a caught error to an HTTP status code.
- * 401/authentication errors → 401, everything else → 500.
- */
-export function statusFromError(error: unknown): number {
-  const msg = error instanceof Error ? error.message : "";
-  return msg.includes("401") || msg.includes("authentication") ? 401 : 500;
 }

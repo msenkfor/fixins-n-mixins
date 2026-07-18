@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-07-18T16:35:09Z | Files: 40 | Described: 0/40
-<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T16:35:09Z","fingerprint":"84c78c50900e956c80196074a8075e21c9caea1c","fileCount":40,"truncated":false} -->
+Generated: 2026-07-18T19:40:50Z | Files: 44 | Described: 0/44
+<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T19:40:50Z","fingerprint":"6e52db855fcf73f2b814cf1548e68786710c0360","fileCount":44,"truncated":false} -->
 
 ### (root)/
 - `.gitignore`
@@ -23,6 +23,11 @@ Generated: 2026-07-18T16:35:09Z | Files: 40 | Described: 0/40
 ### app/recipe/
 - `app/recipe/[id].tsx`
 
+### assets/animations/
+- `assets/animations/cooking-loader.json`
+- `assets/animations/scanning.json`
+- `assets/animations/splash-hero.json`
+
 ### design-system/fixins-n-mixins/
 - `design-system/fixins-n-mixins/MASTER.md`
 
@@ -30,6 +35,7 @@ Generated: 2026-07-18T16:35:09Z | Files: 40 | Described: 0/40
 - `src/theme.ts`
 
 ### src/components/
+- `src/components/ErrorBanner.tsx`
 - `src/components/SFIcon.tsx`
 - `src/components/SkeletonCard.tsx`
 

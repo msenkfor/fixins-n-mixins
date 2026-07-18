@@ -475,18 +475,36 @@ Deno.test("returns 401 when Anthropic returns authentication error", async () =>
   );
 
   assertEquals(res.status, 401);
+  const body = await parseResponse(res);
+  assertStringIncludes(body.error as string, "authentication");
 });
 
-Deno.test("returns 500 for generic Anthropic errors", async () => {
-  const deps = mockClientThatThrows(new Error("overloaded_error"));
+Deno.test("returns 402 with friendly message when Anthropic credit balance is low", async () => {
+  const deps = mockClientThatThrows(
+    new Error(
+      "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low\"}}",
+    ),
+  );
   const res = await handleRequest(
     makePostRequest({ ingredients: VALID_INGREDIENTS }),
     deps,
   );
 
-  assertEquals(res.status, 500);
+  assertEquals(res.status, 402);
   const body = await parseResponse(res);
-  assertStringIncludes(body.error as string, "overloaded_error");
+  assertStringIncludes(body.error as string, "AI credits");
+});
+
+Deno.test("returns 503 with friendly message when Anthropic is overloaded", async () => {
+  const deps = mockClientThatThrows(new Error("529 overloaded_error"));
+  const res = await handleRequest(
+    makePostRequest({ ingredients: VALID_INGREDIENTS }),
+    deps,
+  );
+
+  assertEquals(res.status, 503);
+  const body = await parseResponse(res);
+  assertStringIncludes(body.error as string, "busy");
 });
 
 // ── CORS on all responses ───────────────────────────────────────────

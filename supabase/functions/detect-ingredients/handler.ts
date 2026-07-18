@@ -3,48 +3,22 @@ import {
   corsPreflightResponse,
   jsonResponse,
   errorResponse,
-  statusFromError,
+  mapUpstreamError,
 } from "../_shared/response.ts";
-import type { DetectedIngredient, HandlerDeps } from "../_shared/types.ts";
+import type { HandlerDeps } from "../_shared/types.ts";
+import {
+  DETECTION_PROMPT,
+  type ImageMediaType,
+  normalizeIngredients,
+  stripCodeFences,
+} from "./parse.ts";
 
 export type { HandlerDeps };
 
-const DETECTION_PROMPT = `Look at this photo and identify all food ingredients visible. For each ingredient, provide:
-- "name": a common grocery name (lowercase, e.g. "chicken breast", "bell pepper")
-- "quantity": an estimated amount if visible (e.g. "2 lbs", "3", "1 bunch"), or omit if unclear
-
-Return ONLY a JSON array of objects. No markdown, no explanation, just the JSON array.
-Example: [{"name": "chicken breast", "quantity": "2 lbs"}, {"name": "garlic"}]
-
-If no food ingredients are visible, return an empty array: []`;
-
-type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
-
-/** Strip markdown code fences that Claude sometimes wraps around JSON. */
-function stripCodeFences(text: string): string {
-  return text
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-}
-
-/** Validate and normalize raw ingredient data from Claude. */
-function normalizeIngredients(
-  raw: unknown[],
-): DetectedIngredient[] {
-  return raw
-    .filter(
-      (item): item is { name: string; quantity?: unknown } =>
-        !!item &&
-        typeof (item as Record<string, unknown>).name === "string" &&
-        ((item as Record<string, unknown>).name as string).trim().length > 0,
-    )
-    .map((item) => ({
-      name: item.name.trim().toLowerCase(),
-      ...(item.quantity ? { quantity: String(item.quantity).trim() } : {}),
-    }));
-}
-
+/**
+ * Detect food ingredients from a base64 image via Claude vision.
+ * Expects JSON body: `{ imageBase64: string, mimeType?: string }`.
+ */
 export async function handleRequest(
   req: Request,
   deps: HandlerDeps,
@@ -78,13 +52,11 @@ export async function handleRequest(
       ],
     });
 
-    // Extract text response
     const textBlock = message.content.find((b) => b.type === "text");
     if (!textBlock || textBlock.type !== "text" || !("text" in textBlock)) {
       return errorResponse("No text response from AI model", 502);
     }
 
-    // Parse JSON from response
     let parsed: unknown;
     try {
       parsed = JSON.parse(stripCodeFences((textBlock as { text: string }).text));
@@ -101,7 +73,7 @@ export async function handleRequest(
     return jsonResponse({ ingredients: normalizeIngredients(parsed) });
   } catch (error) {
     console.error("detect-ingredients error:", error);
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    return errorResponse(`Ingredient detection failed: ${msg}`, statusFromError(error));
+    const mapped = mapUpstreamError(error, "detect");
+    return errorResponse(mapped.message, mapped.status);
   }
 }

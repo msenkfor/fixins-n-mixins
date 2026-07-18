@@ -30,6 +30,43 @@ export class ApiError extends Error {
   }
 }
 
+/** Prefer server-provided friendly copy; fall back by status. */
+function friendlyMessage(status: number, serverMessage: string | null): string {
+  if (serverMessage && !looksTechnical(serverMessage)) {
+    return serverMessage;
+  }
+
+  switch (status) {
+    case 400:
+    case 402:
+      return "We're temporarily out of AI credits. Add funds in the Anthropic console, then try again.";
+    case 401:
+      return "AI service authentication failed. Check that the API key is set correctly.";
+    case 429:
+      return "Too many requests right now. Wait a moment and try again.";
+    case 503:
+      return "The AI is busy right now. Please try again in a moment.";
+    case 502:
+      return "Something went wrong while talking to the AI. Please try again.";
+    default:
+      return serverMessage ?? "Something went wrong. Please try again.";
+  }
+}
+
+function looksTechnical(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("error code:") ||
+    lower.includes("invalid_request") ||
+    lower.includes("authentication_error") ||
+    lower.includes("not_found_error") ||
+    lower.includes("rate_limit_error") ||
+    /status \d{3}/.test(lower) ||
+    lower.startsWith("ingredient detection failed:") ||
+    lower.startsWith("recipe generation failed:")
+  );
+}
+
 async function callFunction<T>(
   functionName: string,
   body: Record<string, unknown>,
@@ -46,8 +83,7 @@ async function callFunction<T>(
       },
       body: JSON.stringify(body),
     });
-  } catch (err) {
-    // Network-level failure (no connection, DNS, timeout)
+  } catch {
     throw new ApiError(
       "Could not connect to the server. Check your internet connection and try again.",
       0,
@@ -58,17 +94,16 @@ async function callFunction<T>(
   try {
     data = await response.json();
   } catch {
-    throw new ApiError(
-      `Server returned an invalid response (status ${response.status})`,
-      response.status,
-    );
+    throw new ApiError(friendlyMessage(response.status, null), response.status);
   }
 
   if (!response.ok) {
-    const message = typeof data.error === "string"
-      ? data.error
-      : `Request failed (status ${response.status})`;
-    throw new ApiError(message, response.status);
+    const serverMessage =
+      typeof data.error === "string" ? data.error : null;
+    throw new ApiError(
+      friendlyMessage(response.status, serverMessage),
+      response.status,
+    );
   }
 
   return data as T;

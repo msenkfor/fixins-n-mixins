@@ -4,9 +4,13 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
+    "@expo-google-fonts/fredoka": "^0.4.1",
+    "@expo-google-fonts/nunito": "^0.4.2",
+    "@types/jest": "29.5.14",
     "expo": "~57.0.7",
     "expo-constants": "~57.0.6",
     "expo-file-system": "~57.0.1",
+    "expo-font": "~57.0.1",
     "expo-haptics": "~57.0.1",
     "expo-image": "~57.0.1",
     "expo-image-manipulator": "~57.0.5",
@@ -15,6 +19,8 @@
     "expo-linking": "~57.0.3",
     "expo-router": "~57.0.7",
     "expo-status-bar": "~57.0.1",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.2",
     "lottie-react-native": "~7.3.8",
     "react": "19.2.7",
     "react-native": "0.86.0",
@@ -24,7 +30,10 @@
     "react-native-worklets": "0.10.0"
   },
   "devDependencies": {
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
     "@types/react": "~19.2.2",
+    "react-test-renderer": "^19.2.7",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -32,7 +41,31 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test": "jest",
     "test:functions": "deno test supabase/functions/tests/ --allow-env --allow-read"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.ts"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.[jt]s?(x)"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/.gsd/",
+      "/supabase/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.gsd/"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|lottie-react-native)"
+    ]
   },
   "private": true
 }

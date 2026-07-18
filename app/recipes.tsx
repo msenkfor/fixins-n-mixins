@@ -1,191 +1,18 @@
-import React, { useCallback } from "react";
-import { View, Text, Pressable, FlatList } from "react-native";
+import { useCallback } from "react";
+import { View, Text, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useRecipeSession } from "@/src/context/RecipeSessionContext";
 import { refreshRecipes } from "@/src/services/recipeApi";
-import { RecipeListSkeleton } from "@/src/components/SkeletonCard";
-import { ErrorBanner } from "@/src/components/ErrorBanner";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
-import { SFIcon } from "@/src/components/SFIcon";
+import { ErrorBanner } from "@/src/components/error-banner";
+import { PrimaryButton } from "@/src/components/primary-button";
+import { RecipeCard } from "@/src/components/recipe-card";
+import { RecipeListSkeleton } from "@/src/components/recipe-list-skeleton";
+import { RecipesHeader } from "@/src/components/recipes-header";
+import { SecondaryButton } from "@/src/components/secondary-button";
+import { SFIcon } from "@/src/components/sf-icon";
+import { colors, spacing, radii, typography } from "@/src/theme";
 import { Recipe } from "@/src/types/recipe";
-
-const formatTime = (recipe: Recipe) => {
-  const total = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
-  return `${total} min`;
-};
-
-const matchPercentage = (recipe: Recipe) => {
-  return Math.round(
-    (recipe.matchedIngredientCount / recipe.totalIngredientCount) * 100
-  );
-};
-
-/** Memoized recipe card to avoid re-renders on FlatList scroll */
-const RecipeCard = React.memo(function RecipeCard({
-  item,
-  onPress,
-}: {
-  item: Recipe;
-  onPress: (id: string) => void;
-}) {
-  return (
-    <Pressable
-      onPress={() => onPress(item.id)}
-      accessibilityRole="button"
-      accessibilityLabel={`${item.title}, ${formatTime(item)}, ${matchPercentage(item)} percent match`}
-      style={({ pressed }) => ({
-        backgroundColor: colors.bgCard,
-        borderRadius: radii.lg,
-        borderCurve: "continuous",
-        padding: spacing.xl,
-        boxShadow: shadows.card,
-        position: "relative" as const,
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      {/* Card header */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: spacing.sm,
-          gap: spacing.md,
-        }}
-      >
-        <Text
-          selectable
-          numberOfLines={2}
-          style={{ ...typography.h3, fontSize: 18, flex: 1 }}
-        >
-          {item.title}
-        </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 4,
-            backgroundColor: colors.bgMuted,
-            paddingHorizontal: spacing.sm,
-            paddingVertical: spacing.xs,
-            borderRadius: radii.sm,
-            borderCurve: "continuous",
-          }}
-        >
-          <SFIcon
-            name="clock"
-            size={12}
-            tintColor={colors.primary as string}
-          />
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: "600",
-              color: colors.primary,
-              fontVariant: ["tabular-nums"],
-            }}
-          >
-            {formatTime(item)}
-          </Text>
-        </View>
-      </View>
-
-      {/* Description */}
-      <Text
-        selectable
-        numberOfLines={2}
-        style={{ ...typography.body, marginBottom: spacing.lg }}
-      >
-        {item.description}
-      </Text>
-
-      {/* Footer with match + tags */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: colors.matchBg,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.xs + 2,
-            borderRadius: radii.sm,
-            borderCurve: "continuous",
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 13,
-              fontWeight: "700",
-              color: colors.matchText,
-              fontVariant: ["tabular-nums"],
-            }}
-          >
-            {matchPercentage(item)}% match
-          </Text>
-          <Text
-            style={{
-              fontSize: 10,
-              color: colors.matchText,
-              opacity: 0.7,
-              marginTop: 1,
-              fontVariant: ["tabular-nums"],
-            }}
-          >
-            {item.matchedIngredientCount}/{item.totalIngredientCount}{" "}
-            ingredients
-          </Text>
-        </View>
-        <View style={{ flexDirection: "row", gap: spacing.xs }}>
-          {item.tags.slice(0, 2).map((tag) => (
-            <View
-              key={tag}
-              style={{
-                backgroundColor: colors.tagBg,
-                paddingHorizontal: spacing.sm,
-                paddingVertical: spacing.xs,
-                borderRadius: radii.sm,
-                borderCurve: "continuous",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: colors.tagText,
-                }}
-              >
-                {tag}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Chevron */}
-      <View
-        style={{
-          position: "absolute",
-          right: spacing.md,
-          top: 0,
-          bottom: 0,
-          justifyContent: "center",
-        }}
-      >
-        <SFIcon
-          name="chevron.right"
-          size={16}
-          tintColor={colors.border as string}
-          weight="medium"
-        />
-      </View>
-    </Pressable>
-  );
-});
 
 export default function RecipeListScreen() {
   const router = useRouter();
@@ -247,83 +74,15 @@ export default function RecipeListScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Action bar */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          paddingHorizontal: spacing.xl,
-          paddingVertical: spacing.md,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.borderLight,
-        }}
-      >
-        <Pressable
-          onPress={handleRetake}
-          accessibilityRole="button"
-          accessibilityLabel="Take a new photo"
-          style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            gap: spacing.xs,
-            paddingVertical: spacing.xs,
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <SFIcon
-            name="camera"
-            size={16}
-            tintColor={colors.textMuted as string}
-          />
-          <Text
-            style={{
-              ...typography.bodySmall,
-              fontWeight: "600",
-              color: colors.textMuted,
-            }}
-          >
-            New Photo
-          </Text>
-        </Pressable>
+      <RecipesHeader
+        ingredientCount={ingredients.length}
+        recipeCount={recipes.length}
+        isLoading={isLoading}
+        noMoreRecipes={noMoreRecipes}
+        onNewPhoto={handleRetake}
+        onMoreRecipes={handleRefresh}
+      />
 
-        <Pressable
-          onPress={handleRefresh}
-          disabled={noMoreRecipes || isLoading}
-          accessibilityRole="button"
-          accessibilityLabel="Get more recipe suggestions"
-          accessibilityState={{ disabled: noMoreRecipes || isLoading }}
-          style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            gap: spacing.xs,
-            backgroundColor: colors.primaryMuted,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
-            borderRadius: radii.full,
-            opacity:
-              noMoreRecipes || isLoading ? 0.35 : pressed ? 0.7 : 1,
-          })}
-        >
-          <SFIcon
-            name="arrow.clockwise"
-            size={14}
-            tintColor={colors.primary as string}
-            weight="semibold"
-          />
-          <Text
-            style={{
-              fontSize: 13,
-              fontWeight: "700",
-              color: colors.primary,
-            }}
-          >
-            More Recipes
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* No-more banner */}
       {noMoreRecipes && (
         <View
           style={{
@@ -338,8 +97,12 @@ export default function RecipeListScreen() {
             gap: spacing.md,
           }}
         >
-          {/* Decorative emoji — not structural */}
-          <Text style={{ fontSize: 24 }}>🍽️</Text>
+          <SFIcon
+            name="fork.knife"
+            size={22}
+            tintColor={colors.primary as string}
+            weight="medium"
+          />
           <Text
             style={{
               ...typography.bodySmall,
@@ -352,7 +115,6 @@ export default function RecipeListScreen() {
         </View>
       )}
 
-      {/* Error banner */}
       {error && !isLoading && (
         <ErrorBanner
           message={error}
@@ -361,7 +123,6 @@ export default function RecipeListScreen() {
         />
       )}
 
-      {/* Loading animation + skeleton or recipe list */}
       {isLoading ? (
         <View style={{ flex: 1 }}>
           <View
@@ -397,8 +158,68 @@ export default function RecipeListScreen() {
             padding: spacing.lg,
             gap: spacing.md,
             paddingBottom: 32,
+            flexGrow: 1,
           }}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: spacing.xxl,
+                paddingTop: 48,
+                gap: spacing.md,
+              }}
+            >
+              <SFIcon
+                name="fork.knife"
+                size={36}
+                tintColor={colors.primary as string}
+                weight="medium"
+              />
+              <Text style={{ ...typography.h3, textAlign: "center" }}>
+                No recipes yet
+              </Text>
+              <Text
+                style={{
+                  ...typography.bodySmall,
+                  textAlign: "center",
+                  marginBottom: spacing.sm,
+                }}
+              >
+                We couldn't find matches for these ingredients. Try again or
+                snap a new photo.
+              </Text>
+              <View style={{ width: "100%", gap: spacing.sm }}>
+                <PrimaryButton
+                  label="Try again"
+                  onPress={handleRefresh}
+                  disabled={noMoreRecipes}
+                  icon={
+                    <SFIcon
+                      name="arrow.clockwise"
+                      size={16}
+                      tintColor="#FFFFFF"
+                      weight="semibold"
+                    />
+                  }
+                />
+                <SecondaryButton
+                  label="New photo"
+                  onPress={handleRetake}
+                  icon={
+                    <SFIcon
+                      name="camera.fill"
+                      size={16}
+                      tintColor={colors.primary as string}
+                      weight="medium"
+                    />
+                  }
+                />
+              </View>
+            </View>
+          }
         />
       )}
     </View>

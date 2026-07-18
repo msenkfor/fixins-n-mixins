@@ -256,10 +256,40 @@ Deno.test("returns 401 when Anthropic returns authentication error", async () =>
   );
 
   assertEquals(res.status, 401);
+  const body = await parseResponse(res);
+  assertStringIncludes(body.error as string, "authentication");
 });
 
-Deno.test("returns 500 for generic Anthropic errors", async () => {
-  const deps = mockClientThatThrows(new Error("rate_limit_exceeded"));
+Deno.test("returns 402 with friendly message when Anthropic credit balance is low", async () => {
+  const deps = mockClientThatThrows(
+    new Error(
+      "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low\"}}",
+    ),
+  );
+  const res = await handleRequest(
+    makePostRequest({ imageBase64: "dGVzdA==" }),
+    deps,
+  );
+
+  assertEquals(res.status, 402);
+  const body = await parseResponse(res);
+  assertStringIncludes(body.error as string, "AI credits");
+});
+
+Deno.test("returns 429 with friendly message on rate limit", async () => {
+  const deps = mockClientThatThrows(new Error("429 rate_limit_error"));
+  const res = await handleRequest(
+    makePostRequest({ imageBase64: "dGVzdA==" }),
+    deps,
+  );
+
+  assertEquals(res.status, 429);
+  const body = await parseResponse(res);
+  assertStringIncludes(body.error as string, "Too many requests");
+});
+
+Deno.test("returns friendly message for generic Anthropic errors", async () => {
+  const deps = mockClientThatThrows(new Error("something exploded"));
   const res = await handleRequest(
     makePostRequest({ imageBase64: "dGVzdA==" }),
     deps,
@@ -267,7 +297,7 @@ Deno.test("returns 500 for generic Anthropic errors", async () => {
 
   assertEquals(res.status, 500);
   const body = await parseResponse(res);
-  assertStringIncludes(body.error as string, "rate_limit_exceeded");
+  assertStringIncludes(body.error as string, "couldn't identify ingredients");
 });
 
 // ── CORS on all responses ───────────────────────────────────────────
