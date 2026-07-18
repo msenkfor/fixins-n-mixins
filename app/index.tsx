@@ -2,44 +2,20 @@ import { View, Text, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
+import LottieView from "lottie-react-native";
 import { useRecipeSession } from "@/src/context/RecipeSessionContext";
 import { detectIngredients } from "@/src/services/recipeApi";
 import { colors, spacing, radii, shadows, typography } from "@/src/theme";
 import { SFIcon } from "@/src/components/SFIcon";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
-import { useEffect } from "react";
+import { useRef } from "react";
 
 export default function CameraScreen() {
   const router = useRouter();
   const { isLoading, error, setPhoto, setIngredients, setLoading, setError, resetSession } =
     useRecipeSession();
 
-  const pulseScale = useSharedValue(1);
-
-  useEffect(() => {
-    if (!isLoading) {
-      pulseScale.value = 1;
-      return;
-    }
-    pulseScale.value = withRepeat(
-      withSequence(
-        withTiming(1.08, { duration: 1000 }),
-        withTiming(1, { duration: 1000 })
-      ),
-      -1
-    );
-  }, [isLoading, pulseScale]);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
-  }));
+  const scanningRef = useRef<LottieView>(null);
 
   const takePhoto = async () => {
     if (process.env.EXPO_OS === "ios") {
@@ -126,9 +102,9 @@ export default function CameraScreen() {
         <View style={{ alignItems: "center", marginBottom: 56 }}>
           <View
             style={{
-              width: 88,
-              height: 88,
-              borderRadius: 44,
+              width: 100,
+              height: 100,
+              borderRadius: 50,
               borderCurve: "continuous",
               backgroundColor: colors.bgCard,
               justifyContent: "center",
@@ -137,8 +113,12 @@ export default function CameraScreen() {
               boxShadow: shadows.card,
             }}
           >
-            {/* Decorative emoji — not a structural icon */}
-            <Text style={{ fontSize: 44 }}>🍳</Text>
+            <LottieView
+              source={require("@/assets/animations/splash-hero.json")}
+              autoPlay
+              loop
+              style={{ width: 88, height: 88 }}
+            />
           </View>
           <Text
             style={{
@@ -173,28 +153,23 @@ export default function CameraScreen() {
         {/* Action area */}
         {isLoading ? (
           <View style={{ alignItems: "center", gap: spacing.md }}>
-            <Animated.View
-              style={[
-                {
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  borderCurve: "continuous",
-                  backgroundColor: colors.primaryMuted,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginBottom: spacing.sm,
-                },
-                pulseStyle,
-              ]}
+            <View
+              style={{
+                width: 100,
+                height: 100,
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: spacing.sm,
+              }}
             >
-              <SFIcon
-                name="magnifyingglass"
-                size={36}
-                tintColor={colors.primary as string}
-                weight="medium"
+              <LottieView
+                ref={scanningRef}
+                source={require("@/assets/animations/scanning.json")}
+                autoPlay
+                loop
+                style={{ width: 100, height: 100 }}
               />
-            </Animated.View>
+            </View>
             <Text style={{ ...typography.h3, color: colors.text }}>
               Scanning your photo…
             </Text>
