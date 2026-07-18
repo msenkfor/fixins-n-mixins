@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-07-18T16:19:24Z | Files: 34 | Described: 0/34
-<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T16:19:24Z","fingerprint":"e37865d8d6b2af5c868c2fa939e918cbe842c88d","fileCount":34,"truncated":false} -->
+Generated: 2026-07-18T16:35:09Z | Files: 40 | Described: 0/40
+<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T16:35:09Z","fingerprint":"84c78c50900e956c80196074a8075e21c9caea1c","fileCount":40,"truncated":false} -->
 
 ### (root)/
 - `.gitignore`
@@ -23,10 +23,14 @@ Generated: 2026-07-18T16:19:24Z | Files: 34 | Described: 0/34
 ### app/recipe/
 - `app/recipe/[id].tsx`
 
+### design-system/fixins-n-mixins/
+- `design-system/fixins-n-mixins/MASTER.md`
+
 ### src/
 - `src/theme.ts`
 
 ### src/components/
+- `src/components/SFIcon.tsx`
 - `src/components/SkeletonCard.tsx`
 
 ### src/context/
@@ -46,7 +50,10 @@ Generated: 2026-07-18T16:19:24Z | Files: 34 | Described: 0/34
 - `supabase/config.toml`
 
 ### supabase/functions/_shared/
+- `supabase/functions/_shared/config.ts`
 - `supabase/functions/_shared/cors.ts`
+- `supabase/functions/_shared/response.ts`
+- `supabase/functions/_shared/types.ts`
 
 ### supabase/functions/detect-ingredients/
 - `supabase/functions/detect-ingredients/.npmrc`
@@ -59,6 +66,7 @@ Generated: 2026-07-18T16:19:24Z | Files: 34 | Described: 0/34
 - `supabase/functions/generate-recipes/deno.json`
 - `supabase/functions/generate-recipes/handler.ts`
 - `supabase/functions/generate-recipes/index.ts`
+- `supabase/functions/generate-recipes/tool-schema.ts`
 
 ### supabase/functions/tests/
 - `supabase/functions/tests/detect-ingredients.test.ts`

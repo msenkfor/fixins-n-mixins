@@ -4,7 +4,7 @@
  * detect-ingredients: photo → compress → base64 → Claude vision → ingredient list
  * generate-recipes:   ingredients → Claude tool use → structured recipes
  */
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
 import { DetectedIngredient, Recipe } from "../types/recipe";
 
@@ -96,10 +96,7 @@ export async function detectIngredients(
 ): Promise<DetectedIngredient[]> {
   // Compress before encoding — raw camera photos can be 5-10MB
   const compressedUri = await compressPhoto(photoUri);
-
-  const imageBase64 = await FileSystem.readAsStringAsync(compressedUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  const imageBase64 = await new File(compressedUri).base64();
 
   const result = await callFunction<{ ingredients: DetectedIngredient[] }>(
     "detect-ingredients",
