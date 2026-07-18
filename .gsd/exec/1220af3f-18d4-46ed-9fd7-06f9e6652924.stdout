@@ -1,0 +1,43 @@
+=== EMOJI-AS-ICON USAGE ===
+
+=== MISSING accessibilityLabel ===
+app//index.tsx:1:import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
+app//index.tsx:117:            <TouchableOpacity
+app//index.tsx:129:            </TouchableOpacity>
+app//index.tsx:131:            <TouchableOpacity
+app//index.tsx:140:            </TouchableOpacity>
+app//recipe/[id].tsx:7:  TouchableOpacity,
+app//recipe/[id].tsx:114:              <TouchableOpacity
+app//recipe/[id].tsx:159:              </TouchableOpacity>
+app//recipe/[id].tsx:178:              <TouchableOpacity
+app//recipe/[id].tsx:204:              </TouchableOpacity>
+app//recipes.tsx:4:  TouchableOpacity,
+app//recipes.tsx:65:        <TouchableOpacity
+app//recipes.tsx:72:        </TouchableOpacity>
+app//recipes.tsx:74:        <TouchableOpacity
+app//recipes.tsx:85:        </TouchableOpacity>
+app//recipes.tsx:108:            <TouchableOpacity
+app//recipes.tsx:153:            </TouchableOpacity>
+app//ingredients.tsx:1:import { View, Text, TouchableOpacity, FlatList, StyleSheet } from "react-native";
+app//ingredients.tsx:63:            <TouchableOpacity
+app//ingredients.tsx:69:            </TouchableOpacity>
+
+=== INDEX-BASED keyExtractor ===
+app//recipes.tsx:104:          keyExtractor={(item) => item.id}
+app//ingredients.tsx:49:        keyExtractor={(_, i) => String(i)}
+
+=== INLINE RENDER FUNCTIONS IN FLATLIST ===
+app//recipes.tsx:107:          renderItem={({ item }) => (
+app//ingredients.tsx:52:        renderItem={({ item, index }) => (
+
+=== TOUCH TARGET SIZES (small buttons/pressables) ===
+app//index.tsx:161:    height: 320,
+app//index.tsx:176:    width: 88,
+app//index.tsx:177:    height: 88,
+app//index.tsx:248:    width: 80,
+app//index.tsx:249:    height: 80,
+app//recipe/[id].tsx:321:    height: 32,
+app//recipe/[id].tsx:361:    width: 22,
+app//recipe/[id].tsx:362:    height: 22,
+app//recipe/[id].tsx:424:    width: 32,
+app//recipe/[id].tsx:425:    height: 32,
