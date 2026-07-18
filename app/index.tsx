@@ -8,73 +8,13 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  BounceIn,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  withDelay,
-  Easing,
 } from "react-native-reanimated";
 import { useRecipeSession } from "@/src/context/RecipeSessionContext";
 import { detectIngredients } from "@/src/services/recipeApi";
 import { colors, spacing, radii, shadows, typography } from "@/src/theme";
 import { SFIcon } from "@/src/components/SFIcon";
 import { ErrorBanner } from "@/src/components/ErrorBanner";
-import { useRef, useEffect } from "react";
-
-/** Floating food accent that bobs gently */
-function FloatingEmoji({
-  emoji,
-  size,
-  top,
-  left,
-  delay,
-}: {
-  emoji: string;
-  size: number;
-  top: number;
-  left: number;
-  delay: number;
-}) {
-  const y = useSharedValue(0);
-
-  useEffect(() => {
-    y.value = withDelay(
-      delay,
-      withRepeat(
-        withSequence(
-          withTiming(-8, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        true
-      )
-    );
-  }, [y, delay]);
-
-  const floatStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: y.value }],
-  }));
-
-  return (
-    <Animated.View
-      entering={BounceIn.delay(delay).duration(800)}
-      style={[
-        {
-          position: "absolute",
-          top,
-          left,
-          zIndex: 1,
-        },
-        floatStyle,
-      ]}
-    >
-      <Text style={{ fontSize: size }}>{emoji}</Text>
-    </Animated.View>
-  );
-}
+import { useRef } from "react";
 
 export default function CameraScreen() {
   const router = useRouter();
@@ -162,14 +102,6 @@ export default function CameraScreen() {
         }}
       />
 
-      {/* Floating food accents */}
-      <FloatingEmoji emoji="🥕" size={28} top={80} left={30} delay={200} />
-      <FloatingEmoji emoji="🍅" size={24} top={60} left={310} delay={500} />
-      <FloatingEmoji emoji="🧀" size={22} top={160} left={20} delay={800} />
-      <FloatingEmoji emoji="🌶️" size={20} top={140} left={320} delay={400} />
-      <FloatingEmoji emoji="🥑" size={26} top={240} left={40} delay={600} />
-      <FloatingEmoji emoji="🍋" size={20} top={220} left={300} delay={900} />
-
       <View
         style={{
           flex: 1,
@@ -179,20 +111,20 @@ export default function CameraScreen() {
       >
         {/* Hero section */}
         <View style={{ alignItems: "center", marginBottom: 48 }}>
-          {/* Chef animation — larger, no constraining circle */}
+          {/* Chef chopping scene */}
           <Animated.View
             entering={FadeIn.duration(600).delay(100)}
             style={{
-              width: 160,
-              height: 160,
-              marginBottom: spacing.lg,
+              width: 260,
+              height: 200,
+              marginBottom: spacing.md,
             }}
           >
             <LottieView
               source={require("@/assets/animations/splash-hero.json")}
               autoPlay
               loop
-              style={{ width: 160, height: 160 }}
+              style={{ width: 260, height: 200 }}
             />
           </Animated.View>
 
