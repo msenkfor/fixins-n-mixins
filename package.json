@@ -6,6 +6,7 @@
     "@anthropic-ai/sdk": "^0.52.0",
     "expo": "~57.0.7",
     "expo-constants": "~57.0.6",
+    "expo-file-system": "~57.0.1",
     "expo-image-manipulator": "~57.0.5",
     "expo-image-picker": "~57.0.5",
     "expo-linear-gradient": "~57.0.1",
