@@ -1,16 +1,189 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-} from "react-native";
+import React, { useCallback } from "react";
+import { View, Text, Pressable, FlatList } from "react-native";
 import { useRouter } from "expo-router";
-import { useRecipeSession } from "../src/context/RecipeSessionContext";
-import { refreshRecipes } from "../src/services/recipeApi";
-import { RecipeListSkeleton } from "../src/components/SkeletonCard";
-import { colors, spacing, radii, shadows, typography } from "../src/theme";
-import { Recipe } from "../src/types/recipe";
+import { useRecipeSession } from "@/src/context/RecipeSessionContext";
+import { refreshRecipes } from "@/src/services/recipeApi";
+import { RecipeListSkeleton } from "@/src/components/SkeletonCard";
+import { colors, spacing, radii, shadows, typography } from "@/src/theme";
+import { SFIcon } from "@/src/components/SFIcon";
+import { Recipe } from "@/src/types/recipe";
+
+const formatTime = (recipe: Recipe) => {
+  const total = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
+  return `${total} min`;
+};
+
+const matchPercentage = (recipe: Recipe) => {
+  return Math.round(
+    (recipe.matchedIngredientCount / recipe.totalIngredientCount) * 100
+  );
+};
+
+/** Memoized recipe card to avoid re-renders on FlatList scroll */
+const RecipeCard = React.memo(function RecipeCard({
+  item,
+  onPress,
+}: {
+  item: Recipe;
+  onPress: (id: string) => void;
+}) {
+  return (
+    <Pressable
+      onPress={() => onPress(item.id)}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.title}, ${formatTime(item)}, ${matchPercentage(item)} percent match`}
+      style={({ pressed }) => ({
+        backgroundColor: colors.bgCard,
+        borderRadius: radii.lg,
+        borderCurve: "continuous",
+        padding: spacing.xl,
+        boxShadow: shadows.card,
+        position: "relative" as const,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      {/* Card header */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: spacing.sm,
+          gap: spacing.md,
+        }}
+      >
+        <Text
+          selectable
+          numberOfLines={2}
+          style={{ ...typography.h3, fontSize: 18, flex: 1 }}
+        >
+          {item.title}
+        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+            backgroundColor: colors.bgMuted,
+            paddingHorizontal: spacing.sm,
+            paddingVertical: spacing.xs,
+            borderRadius: radii.sm,
+            borderCurve: "continuous",
+          }}
+        >
+          <SFIcon
+            name="clock"
+            size={12}
+            tintColor={colors.primary as string}
+          />
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "600",
+              color: colors.primary,
+              fontVariant: ["tabular-nums"],
+            }}
+          >
+            {formatTime(item)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Description */}
+      <Text
+        selectable
+        numberOfLines={2}
+        style={{ ...typography.body, marginBottom: spacing.lg }}
+      >
+        {item.description}
+      </Text>
+
+      {/* Footer with match + tags */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: colors.matchBg,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.xs + 2,
+            borderRadius: radii.sm,
+            borderCurve: "continuous",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "700",
+              color: colors.matchText,
+              fontVariant: ["tabular-nums"],
+            }}
+          >
+            {matchPercentage(item)}% match
+          </Text>
+          <Text
+            style={{
+              fontSize: 10,
+              color: colors.matchText,
+              opacity: 0.7,
+              marginTop: 1,
+              fontVariant: ["tabular-nums"],
+            }}
+          >
+            {item.matchedIngredientCount}/{item.totalIngredientCount}{" "}
+            ingredients
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: spacing.xs }}>
+          {item.tags.slice(0, 2).map((tag) => (
+            <View
+              key={tag}
+              style={{
+                backgroundColor: colors.tagBg,
+                paddingHorizontal: spacing.sm,
+                paddingVertical: spacing.xs,
+                borderRadius: radii.sm,
+                borderCurve: "continuous",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: "600",
+                  color: colors.tagText,
+                }}
+              >
+                {tag}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Chevron */}
+      <View
+        style={{
+          position: "absolute",
+          right: spacing.md,
+          top: 0,
+          bottom: 0,
+          justifyContent: "center",
+        }}
+      >
+        <SFIcon
+          name="chevron.right"
+          size={16}
+          tintColor={colors.border as string}
+          weight="medium"
+        />
+      </View>
+    </Pressable>
+  );
+});
 
 export default function RecipeListScreen() {
   const router = useRouter();
@@ -47,49 +220,124 @@ export default function RecipeListScreen() {
     router.replace("/");
   };
 
-  const formatTime = (recipe: Recipe) => {
-    const total = recipe.prepTimeMinutes + recipe.cookTimeMinutes;
-    return `${total} min`;
-  };
+  const handleRecipePress = useCallback(
+    (id: string) => {
+      router.push(`/recipe/${id}`);
+    },
+    [router]
+  );
 
-  const matchPercentage = (recipe: Recipe) => {
-    return Math.round(
-      (recipe.matchedIngredientCount / recipe.totalIngredientCount) * 100
-    );
-  };
+  const renderItem = useCallback(
+    ({ item }: { item: Recipe }) => (
+      <RecipeCard item={item} onPress={handleRecipePress} />
+    ),
+    [handleRecipePress]
+  );
+
+  const keyExtractor = useCallback((item: Recipe) => item.id, []);
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Action bar */}
-      <View style={styles.actionBar}>
-        <TouchableOpacity
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.md,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.borderLight,
+        }}
+      >
+        <Pressable
           onPress={handleRetake}
-          style={styles.actionButton}
-          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Take a new photo"
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            gap: spacing.xs,
+            paddingVertical: spacing.xs,
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
-          <Text style={styles.actionIcon}>📷</Text>
-          <Text style={styles.actionTextMuted}>New Photo</Text>
-        </TouchableOpacity>
+          <SFIcon
+            name="camera"
+            size={16}
+            tintColor={colors.textMuted as string}
+          />
+          <Text
+            style={{
+              ...typography.bodySmall,
+              fontWeight: "600",
+              color: colors.textMuted,
+            }}
+          >
+            New Photo
+          </Text>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           onPress={handleRefresh}
           disabled={noMoreRecipes || isLoading}
-          style={[
-            styles.refreshButton,
-            (noMoreRecipes || isLoading) && styles.disabledButton,
-          ]}
-          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Get more recipe suggestions"
+          accessibilityState={{ disabled: noMoreRecipes || isLoading }}
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            gap: spacing.xs,
+            backgroundColor: colors.primaryMuted,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+            borderRadius: radii.full,
+            opacity:
+              noMoreRecipes || isLoading ? 0.35 : pressed ? 0.7 : 1,
+          })}
         >
-          <Text style={styles.refreshIcon}>✨</Text>
-          <Text style={styles.refreshText}>More Recipes</Text>
-        </TouchableOpacity>
+          <SFIcon
+            name="arrow.clockwise"
+            size={14}
+            tintColor={colors.primary as string}
+            weight="semibold"
+          />
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "700",
+              color: colors.primary,
+            }}
+          >
+            More Recipes
+          </Text>
+        </Pressable>
       </View>
 
       {/* No-more banner */}
       {noMoreRecipes && (
-        <View style={styles.noMoreBanner}>
-          <Text style={styles.noMoreEmoji}>🍽️</Text>
-          <Text style={styles.noMoreText}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: colors.bgMuted,
+            marginHorizontal: spacing.xl,
+            marginTop: spacing.md,
+            padding: spacing.lg,
+            borderRadius: radii.md,
+            borderCurve: "continuous",
+            gap: spacing.md,
+          }}
+        >
+          {/* Decorative emoji — not structural */}
+          <Text style={{ fontSize: 24 }}>🍽️</Text>
+          <Text
+            style={{
+              ...typography.bodySmall,
+              flex: 1,
+              color: colors.textSecondary,
+            }}
+          >
             You've seen all our suggestions — try a new photo for fresh ideas!
           </Text>
         </View>
@@ -101,221 +349,17 @@ export default function RecipeListScreen() {
       ) : (
         <FlatList
           data={recipes}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{
+            padding: spacing.lg,
+            gap: spacing.md,
+            paddingBottom: 32,
+          }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => router.push(`/recipe/${item.id}`)}
-              activeOpacity={0.7}
-            >
-              {/* Card header */}
-              <View style={styles.cardTop}>
-                <Text style={styles.cardTitle} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <View style={styles.timeBadge}>
-                  <Text style={styles.timeIcon}>⏱</Text>
-                  <Text style={styles.timeText}>{formatTime(item)}</Text>
-                </View>
-              </View>
-
-              {/* Description */}
-              <Text style={styles.cardDescription} numberOfLines={2}>
-                {item.description}
-              </Text>
-
-              {/* Footer with match + tags */}
-              <View style={styles.cardFooter}>
-                <View style={styles.matchBadge}>
-                  <Text style={styles.matchText}>
-                    {matchPercentage(item)}% match
-                  </Text>
-                  <Text style={styles.matchDetail}>
-                    {item.matchedIngredientCount}/{item.totalIngredientCount}{" "}
-                    ingredients
-                  </Text>
-                </View>
-                <View style={styles.tagRow}>
-                  {item.tags.slice(0, 2).map((tag) => (
-                    <View key={tag} style={styles.tag}>
-                      <Text style={styles.tagText}>{tag}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Subtle chevron */}
-              <View style={styles.chevronWrap}>
-                <Text style={styles.chevron}>›</Text>
-              </View>
-            </TouchableOpacity>
-          )}
         />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  actionBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-  },
-  actionIcon: {
-    fontSize: 16,
-  },
-  actionTextMuted: {
-    ...typography.bodySmall,
-    fontWeight: "600",
-    color: colors.textMuted,
-  },
-  refreshButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.primaryMuted,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
-  },
-  refreshIcon: {
-    fontSize: 14,
-  },
-  refreshText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.primary,
-  },
-  disabledButton: {
-    opacity: 0.35,
-  },
-  noMoreBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.bgMuted,
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radii.md,
-    gap: spacing.md,
-  },
-  noMoreEmoji: {
-    fontSize: 24,
-  },
-  noMoreText: {
-    ...typography.bodySmall,
-    flex: 1,
-    color: colors.textSecondary,
-  },
-  list: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: 32,
-  },
-  card: {
-    backgroundColor: colors.bgCard,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    ...shadows.card,
-    position: "relative",
-  },
-  cardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: spacing.sm,
-    gap: spacing.md,
-  },
-  cardTitle: {
-    ...typography.h3,
-    fontSize: 18,
-    flex: 1,
-  },
-  timeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    backgroundColor: colors.bgMuted,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.sm,
-  },
-  timeIcon: {
-    fontSize: 11,
-  },
-  timeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-  cardDescription: {
-    ...typography.body,
-    marginBottom: spacing.lg,
-  },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  matchBadge: {
-    backgroundColor: colors.matchBg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radii.sm,
-  },
-  matchText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.matchText,
-  },
-  matchDetail: {
-    fontSize: 10,
-    color: colors.matchText,
-    opacity: 0.7,
-    marginTop: 1,
-  },
-  tagRow: {
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  tag: {
-    backgroundColor: colors.tagBg,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.sm,
-  },
-  tagText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: colors.tagText,
-  },
-  chevronWrap: {
-    position: "absolute",
-    right: spacing.md,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-  },
-  chevron: {
-    fontSize: 24,
-    color: colors.border,
-    fontWeight: "300",
-  },
-});

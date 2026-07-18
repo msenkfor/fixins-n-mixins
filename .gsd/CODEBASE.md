@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-07-18T15:47:57Z | Files: 29 | Described: 0/29
-<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T15:47:57Z","fingerprint":"427a07bc93b255f4ab56ea6b09d11c32f59b7b57","fileCount":29,"truncated":false} -->
+Generated: 2026-07-18T15:21:53Z | Files: 28 | Described: 0/28
+<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T15:21:53Z","fingerprint":"5bf55b0aebbe79c33304a2ff6ebcb3a6f744f24b","fileCount":28,"truncated":false} -->
 
 ### (root)/
 - `.gitignore`
@@ -44,9 +44,6 @@ Generated: 2026-07-18T15:47:57Z | Files: 29 | Described: 0/29
 ### supabase/
 - `supabase/.gitignore`
 - `supabase/config.toml`
-
-### supabase/functions/_shared/
-- `supabase/functions/_shared/cors.ts`
 
 ### supabase/functions/detect-ingredients/
 - `supabase/functions/detect-ingredients/.npmrc`

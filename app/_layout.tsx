@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { RecipeSessionProvider } from "../src/context/RecipeSessionContext";
-import { colors } from "../src/theme";
+import { RecipeSessionProvider } from "@/src/context/RecipeSessionContext";
+import { colors } from "@/src/theme";
 
 export default function RootLayout() {
   return (
@@ -9,9 +9,9 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: "600", color: colors.text },
+          headerStyle: { backgroundColor: colors.bg as string },
+          headerTintColor: colors.text as string,
+          headerTitleStyle: { fontWeight: "600", color: colors.text as string },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.bg },
           animation: "slide_from_right",
@@ -26,7 +26,7 @@ export default function RootLayout() {
           options={{
             title: "Your Ingredients",
             presentation: "modal",
-            headerStyle: { backgroundColor: colors.bg },
+            headerStyle: { backgroundColor: colors.bg as string },
           }}
         />
         <Stack.Screen name="recipes" options={{ title: "Recipes" }} />

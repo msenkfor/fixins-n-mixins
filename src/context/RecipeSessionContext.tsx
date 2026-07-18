@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useState, useCallback } from "react";
 import { DetectedIngredient, Recipe } from "../types/recipe";
 
 interface RecipeSession {
@@ -91,7 +91,7 @@ export function RecipeSessionProvider({ children }: { children: React.ReactNode 
 }
 
 export function useRecipeSession(): RecipeSession {
-  const ctx = useContext(RecipeSessionContext);
+  const ctx = React.use(RecipeSessionContext);
   if (!ctx) throw new Error("useRecipeSession must be used within RecipeSessionProvider");
   return ctx;
 }

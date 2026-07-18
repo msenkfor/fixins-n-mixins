@@ -1,6 +1,13 @@
-import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Animated } from "react-native";
-import { colors, radii, shadows, spacing } from "../theme";
+import React, { useEffect } from "react";
+import { View } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
+import { colors, radii, shadows, spacing } from "@/src/theme";
 
 function ShimmerBlock({
   width,
@@ -13,37 +20,33 @@ function ShimmerBlock({
   borderRadius?: number;
   style?: object;
 }) {
-  const opacity = useRef(new Animated.Value(0.4)).current;
+  const opacity = useSharedValue(0.4);
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.4,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ])
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 800 }),
+        withTiming(0.4, { duration: 800 })
+      ),
+      -1
     );
-    animation.start();
-    return () => animation.stop();
   }, [opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
 
   return (
     <Animated.View
       style={[
         {
-          width: width as any,
+          width: width as number,
           height,
           borderRadius,
+          borderCurve: "continuous",
           backgroundColor: colors.skeletonBase,
-          opacity,
         },
+        animatedStyle,
         style,
       ]}
     />
@@ -55,27 +58,39 @@ function ShimmerBlock({
  */
 export function SkeletonCard({ index = 0 }: { index?: number }) {
   return (
-    <View style={[styles.card, { opacity: 1 - index * 0.15 }]}>
-      {/* Title */}
+    <View
+      style={{
+        backgroundColor: colors.bgCard as string,
+        borderRadius: radii.lg,
+        borderCurve: "continuous",
+        padding: spacing.xl,
+        boxShadow: shadows.card,
+        opacity: 1 - index * 0.15,
+      }}
+    >
       <ShimmerBlock width="65%" height={20} borderRadius={4} />
-      {/* Description line 1 */}
       <ShimmerBlock
         width="90%"
         height={14}
         borderRadius={4}
         style={{ marginTop: 12 }}
       />
-      {/* Description line 2 */}
       <ShimmerBlock
         width="70%"
         height={14}
         borderRadius={4}
         style={{ marginTop: 6 }}
       />
-      {/* Footer row */}
-      <View style={styles.footerRow}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginTop: 16,
+        }}
+      >
         <ShimmerBlock width={100} height={14} borderRadius={4} />
-        <View style={styles.tagRow}>
+        <View style={{ flexDirection: "row", gap: spacing.sm }}>
           <ShimmerBlock width={50} height={22} borderRadius={6} />
           <ShimmerBlock width={50} height={22} borderRadius={6} />
         </View>
@@ -85,37 +100,14 @@ export function SkeletonCard({ index = 0 }: { index?: number }) {
 }
 
 /**
- * Full skeleton loading state — shows 4 skeleton cards with a message.
+ * Full skeleton loading state — shows 4 skeleton cards.
  */
 export function RecipeListSkeleton() {
   return (
-    <View style={styles.container}>
+    <View style={{ padding: spacing.lg, gap: spacing.md }}>
       {[0, 1, 2, 3].map((i) => (
         <SkeletonCard key={i} index={i} />
       ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.bgCard,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    ...shadows.card,
-  },
-  footerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 16,
-  },
-  tagRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-});
