@@ -1,115 +1,34 @@
-import React, { useCallback } from "react";
-import { View, Text, Pressable, FlatList } from "react-native";
+import { useCallback } from "react";
+import { View, Text, Pressable, FlatList, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import LottieView from "lottie-react-native";
 import { useRecipeSession } from "@/src/context/RecipeSessionContext";
-import { generateRecipes } from "@/src/services/recipeApi";
-import { colors, spacing, radii, shadows, typography } from "@/src/theme";
-import { SFIcon } from "@/src/components/SFIcon";
+import { detectIngredients, generateRecipes } from "@/src/services/recipeApi";
+import { ErrorBanner } from "@/src/components/error-banner";
+import { IngredientCard } from "@/src/components/ingredient-card";
+import { PhotoThumbnail } from "@/src/components/photo-thumbnail";
+import { SFIcon } from "@/src/components/sf-icon";
+import { colors, fonts, spacing, radii, shadows, typography } from "@/src/theme";
 import { DetectedIngredient } from "@/src/types/recipe";
-
-/** Memoized ingredient card to avoid re-renders on FlatList scroll */
-const IngredientCard = React.memo(function IngredientCard({
-  item,
-  index,
-  onRemove,
-}: {
-  item: DetectedIngredient;
-  index: number;
-  onRemove: (index: number) => void;
-}) {
-  return (
-    <View
-      style={{
-        backgroundColor: colors.bgCard,
-        borderRadius: radii.md,
-        borderCurve: "continuous",
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.lg,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        boxShadow: shadows.soft,
-      }}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          flex: 1,
-          gap: spacing.md,
-        }}
-      >
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: colors.accent,
-          }}
-        />
-        <View style={{ flex: 1 }}>
-          <Text
-            selectable
-            style={{ ...typography.label, textTransform: "capitalize" }}
-          >
-            {item.name}
-          </Text>
-          {item.quantity && (
-            <Text selectable style={{ ...typography.caption, marginTop: 1 }}>
-              {item.quantity}
-            </Text>
-          )}
-        </View>
-      </View>
-      <Pressable
-        onPress={() => onRemove(index)}
-        accessibilityRole="button"
-        accessibilityLabel={`Remove ${item.name}`}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        style={({ pressed }) => ({
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          borderCurve: "continuous",
-          backgroundColor: pressed ? colors.dangerMuted : "transparent",
-          justifyContent: "center",
-          alignItems: "center",
-        })}
-      >
-        <View
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 14,
-            borderCurve: "continuous",
-            backgroundColor: colors.dangerMuted,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <SFIcon
-            name="xmark"
-            size={12}
-            tintColor={colors.danger as string}
-            weight="bold"
-          />
-        </View>
-      </Pressable>
-    </View>
-  );
-});
 
 export default function IngredientsScreen() {
   const router = useRouter();
   const {
+    photoUri,
     ingredients,
+    isLoading,
+    error,
     removeIngredient,
+    setPhoto,
+    setIngredients,
     setRecipes,
     addShownTitles,
     setLoading,
     setError,
     shownRecipeTitles,
+    resetSession,
   } = useRecipeSession();
 
   const handleConfirm = async () => {
@@ -118,7 +37,6 @@ export default function IngredientsScreen() {
     }
     setError(null);
     setLoading(true);
-    // Navigate immediately — the recipes screen shows a skeleton loader
     router.replace("/recipes");
 
     try {
@@ -131,6 +49,59 @@ export default function IngredientsScreen() {
       setError(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePhoto = async (uri: string) => {
+    resetSession();
+    setPhoto(uri);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const detected = await detectIngredients(uri);
+      setIngredients(detected);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const takePhoto = async () => {
+    if (process.env.EXPO_OS === "ios") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) return;
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+      allowsEditing: false,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await handlePhoto(result.assets[0].uri);
+    }
+  };
+
+  const pickFromLibrary = async () => {
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+      allowsEditing: false,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await handlePhoto(result.assets[0].uri);
     }
   };
 
@@ -151,84 +122,128 @@ export default function IngredientsScreen() {
     [handleRemove]
   );
 
-  // Use ingredient name + index as key since ingredients lack stable IDs
   const keyExtractor = useCallback(
     (item: DetectedIngredient, i: number) => `${item.name}-${i}`,
     []
   );
 
+  const isEmpty = ingredients.length === 0;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header info */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingHorizontal: spacing.xl,
-          paddingTop: spacing.lg,
-          paddingBottom: spacing.xl,
-          gap: spacing.lg,
-        }}
-      >
+      {photoUri ? (
+        <PhotoThumbnail uri={photoUri} ingredientCount={ingredients.length} />
+      ) : (
         <View
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            borderCurve: "continuous",
-            backgroundColor: colors.primary,
-            justifyContent: "center",
+            flexDirection: "row",
             alignItems: "center",
+            paddingHorizontal: spacing.xl,
+            paddingTop: spacing.lg,
+            paddingBottom: spacing.xl,
+            gap: spacing.lg,
           }}
         >
-          <Text
+          <View
             style={{
-              fontSize: 20,
-              fontWeight: "800",
-              color: colors.textOnPrimary,
-              fontVariant: ["tabular-nums"],
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              borderCurve: "continuous",
+              backgroundColor: colors.primary,
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            {ingredients.length}
-          </Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ ...typography.h2, marginBottom: 2 }}>
-            Ingredients Found
-          </Text>
-          <Text style={typography.bodySmall}>
-            Remove anything that doesn't look right
-          </Text>
-        </View>
-      </View>
-
-      {/* Ingredient list */}
-      <FlatList
-        data={ingredients}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{
-          paddingHorizontal: spacing.xl,
-          gap: spacing.sm,
-          paddingBottom: spacing.lg,
-        }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={{ alignItems: "center", paddingTop: 60, gap: spacing.sm }}>
-            {/* Decorative emoji — not structural */}
-            <Text style={{ fontSize: 48, marginBottom: spacing.sm }}>🧺</Text>
-            <Text style={{ ...typography.h3, color: colors.textSecondary }}>
-              No ingredients remaining
-            </Text>
-            <Text style={typography.bodySmall}>
-              Go back and take another photo
+            <Text
+              style={{
+                ...typography.button,
+                fontSize: 20,
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {ingredients.length}
             </Text>
           </View>
-        }
-      />
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.h2, marginBottom: 2 }}>
+              Ingredients Found
+            </Text>
+            <Text style={typography.bodySmall}>
+              Remove anything that doesn't look right
+            </Text>
+          </View>
+        </View>
+      )}
 
-      {/* Confirm button */}
+      {error && !isLoading && (
+        <ErrorBanner message={error} onDismiss={() => setError(null)} />
+      )}
+
+      {isLoading && isEmpty ? (
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            gap: spacing.md,
+            paddingHorizontal: spacing.xl,
+          }}
+        >
+          <ActivityIndicator size="large" color={colors.primary as string} />
+          <Text style={{ ...typography.h3, color: colors.text }}>
+            Scanning your photo…
+          </Text>
+          <Text style={{ ...typography.bodySmall, textAlign: "center" }}>
+            Identifying ingredients with AI
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={ingredients}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{
+            paddingHorizontal: spacing.xl,
+            gap: spacing.sm,
+            paddingBottom: spacing.lg,
+            flexGrow: 1,
+          }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View
+              style={{
+                alignItems: "center",
+                paddingTop: 40,
+                gap: spacing.md,
+                paddingHorizontal: spacing.xl,
+              }}
+            >
+              <LottieView
+                source={require("@/assets/animations/empty-basket.json")}
+                autoPlay
+                loop
+                style={{ width: 140, height: 140 }}
+              />
+              <Text style={{ ...typography.h3, color: colors.text }}>
+                No ingredients found
+              </Text>
+              <Text
+                style={{
+                  ...typography.bodySmall,
+                  textAlign: "center",
+                  color: colors.textSecondary,
+                  lineHeight: 20,
+                }}
+              >
+                Try another photo with clearer lighting{"\n"}or more food in frame
+              </Text>
+            </View>
+          }
+        />
+      )}
+
       <View
         style={{
           paddingHorizontal: spacing.xl,
@@ -237,43 +252,105 @@ export default function IngredientsScreen() {
           backgroundColor: colors.bg,
           borderTopWidth: 1,
           borderTopColor: colors.borderLight,
+          gap: spacing.sm,
         }}
       >
-        <Pressable
-          onPress={handleConfirm}
-          disabled={ingredients.length === 0}
-          accessibilityRole="button"
-          accessibilityLabel="Find recipes with these ingredients"
-          accessibilityState={{ disabled: ingredients.length === 0 }}
-          style={({ pressed }) => ({
-            backgroundColor: colors.primary,
-            borderRadius: radii.lg,
-            borderCurve: "continuous",
-            paddingVertical: 18,
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: spacing.sm,
-            boxShadow: shadows.card,
-            opacity: ingredients.length === 0 ? 0.4 : pressed ? 0.85 : 1,
-          })}
-        >
-          <Text
-            style={{
-              fontSize: 17,
-              fontWeight: "700",
-              color: colors.textOnPrimary,
-            }}
+        {isEmpty ? (
+          <>
+            <Pressable
+              onPress={takePhoto}
+              disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel="Take a photo of your ingredients"
+              style={({ pressed }) => ({
+                backgroundColor: colors.primary,
+                borderRadius: radii.full,
+                borderCurve: "continuous",
+                paddingVertical: 18,
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: spacing.sm,
+                boxShadow: "0px 3px 10px rgba(232, 106, 51, 0.28)",
+                opacity: isLoading ? 0.5 : pressed ? 0.85 : 1,
+                transform: [{ scale: pressed && !isLoading ? 0.96 : 1 }],
+              })}
+            >
+              <SFIcon
+                name="camera.fill"
+                size={18}
+                tintColor="#FFFFFF"
+                weight="medium"
+              />
+              <Text style={typography.button}>Take a Photo</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={pickFromLibrary}
+              disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel="Choose a photo from your library"
+              style={({ pressed }) => ({
+                backgroundColor: colors.primaryMuted,
+                borderRadius: radii.full,
+                borderCurve: "continuous",
+                paddingVertical: 16,
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 8,
+                borderWidth: 1.5,
+                borderColor: "rgba(232, 106, 51, 0.35)",
+                opacity: isLoading ? 0.5 : pressed ? 0.75 : 1,
+                transform: [{ scale: pressed && !isLoading ? 0.96 : 1 }],
+              })}
+            >
+              <SFIcon
+                name="photo.on.rectangle"
+                size={18}
+                tintColor={colors.primary as string}
+                weight="medium"
+              />
+              <Text
+                style={{
+                  fontFamily: fonts.body.semibold,
+                  fontSize: 15,
+                  color: colors.primary,
+                }}
+              >
+                Choose from Library
+              </Text>
+            </Pressable>
+          </>
+        ) : (
+          <Pressable
+            onPress={handleConfirm}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Find recipes with these ingredients"
+            style={({ pressed }) => ({
+              backgroundColor: colors.primary,
+              borderRadius: radii.full,
+              borderCurve: "continuous",
+              paddingVertical: 18,
+              flexDirection: "row",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: spacing.sm,
+              boxShadow: shadows.card,
+              opacity: isLoading ? 0.5 : pressed ? 0.85 : 1,
+              transform: [{ scale: pressed && !isLoading ? 0.96 : 1 }],
+            })}
           >
-            Find Recipes
-          </Text>
-          <SFIcon
-            name="arrow.right"
-            size={18}
-            tintColor="#FFFFFF"
-            weight="bold"
-          />
-        </Pressable>
+            <Text style={typography.button}>Find Recipes</Text>
+            <SFIcon
+              name="arrow.right"
+              size={18}
+              tintColor="#FFFFFF"
+              weight="bold"
+            />
+          </Pressable>
+        )}
       </View>
     </View>
   );
