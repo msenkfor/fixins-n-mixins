@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useRecipeSession } from "@/src/context/RecipeSessionContext";
 import { refreshRecipes } from "@/src/services/recipeApi";
 import { RecipeListSkeleton } from "@/src/components/SkeletonCard";
+import { ErrorBanner } from "@/src/components/ErrorBanner";
 import { colors, spacing, radii, shadows, typography } from "@/src/theme";
 import { SFIcon } from "@/src/components/SFIcon";
 import { Recipe } from "@/src/types/recipe";
@@ -192,15 +193,18 @@ export default function RecipeListScreen() {
     ingredients,
     isLoading,
     noMoreRecipes,
+    error,
     shownRecipeTitles,
     setRecipes,
     addShownTitles,
     setLoading,
     setNoMoreRecipes,
+    setError,
     resetSession,
   } = useRecipeSession();
 
   const handleRefresh = async () => {
+    setError(null);
     setLoading(true);
     try {
       const newRecipes = await refreshRecipes(ingredients, shownRecipeTitles);
@@ -210,6 +214,10 @@ export default function RecipeListScreen() {
         setRecipes(newRecipes);
         addShownTitles(newRecipes.map((r) => r.title));
       }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -341,6 +349,15 @@ export default function RecipeListScreen() {
             You've seen all our suggestions — try a new photo for fresh ideas!
           </Text>
         </View>
+      )}
+
+      {/* Error banner */}
+      {error && !isLoading && (
+        <ErrorBanner
+          message={error}
+          onRetry={handleRefresh}
+          onDismiss={() => setError(null)}
+        />
       )}
 
       {/* Loading skeleton or recipe list */}

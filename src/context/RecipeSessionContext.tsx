@@ -8,6 +8,7 @@ interface RecipeSession {
   shownRecipeTitles: string[];
   isLoading: boolean;
   noMoreRecipes: boolean;
+  error: string | null;
 
   setPhoto: (uri: string) => void;
   setIngredients: (ingredients: DetectedIngredient[]) => void;
@@ -16,6 +17,7 @@ interface RecipeSession {
   addShownTitles: (titles: string[]) => void;
   setLoading: (loading: boolean) => void;
   setNoMoreRecipes: (value: boolean) => void;
+  setError: (error: string | null) => void;
   resetSession: () => void;
 }
 
@@ -28,6 +30,7 @@ export function RecipeSessionProvider({ children }: { children: React.ReactNode 
   const [shownRecipeTitles, setShownRecipeTitles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [noMoreRecipes, setNoMoreRecipesState] = useState(false);
+  const [error, setErrorState] = useState<string | null>(null);
 
   const setPhoto = useCallback((uri: string) => {
     setPhotoUri(uri);
@@ -57,6 +60,10 @@ export function RecipeSessionProvider({ children }: { children: React.ReactNode 
     setNoMoreRecipesState(value);
   }, []);
 
+  const setError = useCallback((err: string | null) => {
+    setErrorState(err);
+  }, []);
+
   const resetSession = useCallback(() => {
     setPhotoUri(null);
     setIngredientsState([]);
@@ -64,6 +71,7 @@ export function RecipeSessionProvider({ children }: { children: React.ReactNode 
     setShownRecipeTitles([]);
     setIsLoading(false);
     setNoMoreRecipesState(false);
+    setErrorState(null);
   }, []);
 
   return (
@@ -75,6 +83,7 @@ export function RecipeSessionProvider({ children }: { children: React.ReactNode 
         shownRecipeTitles,
         isLoading,
         noMoreRecipes,
+        error,
         setPhoto,
         setIngredients,
         removeIngredient,
@@ -82,6 +91,7 @@ export function RecipeSessionProvider({ children }: { children: React.ReactNode 
         addShownTitles,
         setLoading,
         setNoMoreRecipes,
+        setError,
         resetSession,
       }}
     >

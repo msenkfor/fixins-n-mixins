@@ -13,11 +13,12 @@ import { useRecipeSession } from "@/src/context/RecipeSessionContext";
 import { detectIngredients } from "@/src/services/recipeApi";
 import { colors, spacing, radii, shadows, typography } from "@/src/theme";
 import { SFIcon } from "@/src/components/SFIcon";
+import { ErrorBanner } from "@/src/components/ErrorBanner";
 import { useEffect } from "react";
 
 export default function CameraScreen() {
   const router = useRouter();
-  const { isLoading, setPhoto, setIngredients, setLoading, resetSession } =
+  const { isLoading, error, setPhoto, setIngredients, setLoading, setError, resetSession } =
     useRecipeSession();
 
   const pulseScale = useSharedValue(1);
@@ -83,11 +84,14 @@ export default function CameraScreen() {
     try {
       const ingredients = await detectIngredients(uri);
       setIngredients(ingredients);
+      router.push("/ingredients");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
     } finally {
       setLoading(false);
     }
-
-    router.push("/ingredients");
   };
 
   return (
@@ -157,6 +161,14 @@ export default function CameraScreen() {
             Snap your ingredients, discover delicious recipes
           </Text>
         </View>
+
+        {/* Error banner */}
+        {error && !isLoading && (
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        )}
 
         {/* Action area */}
         {isLoading ? (

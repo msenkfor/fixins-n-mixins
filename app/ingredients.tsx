@@ -108,6 +108,7 @@ export default function IngredientsScreen() {
     setRecipes,
     addShownTitles,
     setLoading,
+    setError,
     shownRecipeTitles,
   } = useRecipeSession();
 
@@ -115,13 +116,19 @@ export default function IngredientsScreen() {
     if (process.env.EXPO_OS === "ios") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
+    setError(null);
     setLoading(true);
+    // Navigate immediately — the recipes screen shows a skeleton loader
     router.replace("/recipes");
 
     try {
       const recipes = await generateRecipes(ingredients, shownRecipeTitles);
       setRecipes(recipes);
       addShownTitles(recipes.map((r) => r.title));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
     } finally {
       setLoading(false);
     }
