@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-07-18T15:21:53Z | Files: 28 | Described: 0/28
-<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T15:21:53Z","fingerprint":"5bf55b0aebbe79c33304a2ff6ebcb3a6f744f24b","fileCount":28,"truncated":false} -->
+Generated: 2026-07-18T16:13:26Z | Files: 38 | Described: 0/38
+<!-- gsd:codebase-meta {"generatedAt":"2026-07-18T16:13:26Z","fingerprint":"385349efd9716d34155576c8c97929992d561b17","fileCount":38,"truncated":false} -->
 
 ### (root)/
 - `.gitignore`
@@ -45,12 +45,26 @@ Generated: 2026-07-18T15:21:53Z | Files: 28 | Described: 0/28
 - `supabase/.gitignore`
 - `supabase/config.toml`
 
+### supabase/functions/_shared/
+- `supabase/functions/_shared/config.ts`
+- `supabase/functions/_shared/cors.ts`
+- `supabase/functions/_shared/response.ts`
+- `supabase/functions/_shared/types.ts`
+
 ### supabase/functions/detect-ingredients/
 - `supabase/functions/detect-ingredients/.npmrc`
 - `supabase/functions/detect-ingredients/deno.json`
+- `supabase/functions/detect-ingredients/handler.ts`
 - `supabase/functions/detect-ingredients/index.ts`
 
 ### supabase/functions/generate-recipes/
 - `supabase/functions/generate-recipes/.npmrc`
 - `supabase/functions/generate-recipes/deno.json`
+- `supabase/functions/generate-recipes/handler.ts`
 - `supabase/functions/generate-recipes/index.ts`
+- `supabase/functions/generate-recipes/tool-schema.ts`
+
+### supabase/functions/tests/
+- `supabase/functions/tests/detect-ingredients.test.ts`
+- `supabase/functions/tests/generate-recipes.test.ts`
+- `supabase/functions/tests/helpers.ts`
